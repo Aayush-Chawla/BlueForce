@@ -17,6 +17,7 @@ import ImpactStoryboard from './pages/ImpactStoryboard';
 import PostEventFeedback from './pages/PostEventFeedback';
 import ChatHelpButton from './components/ChatHelpButton';
 import ChatHelpCenter from './pages/ChatHelpCenter';
+import SuperAdminPanel from './pages/SuperAdminPanel';
 
 // Protected Route component for authenticated users
 const ProtectedRoute = ({ children }) => {
@@ -80,6 +81,11 @@ const AppContent = () => {
           <Route path="/certificates" element={
             <ProtectedRoute>
               <Certificates />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <SuperAdminPanel />
             </ProtectedRoute>
           } />
           
