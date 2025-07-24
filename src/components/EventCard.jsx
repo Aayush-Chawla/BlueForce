@@ -35,6 +35,13 @@ const EventCard = ({ event, onJoin, onLeave, onEdit, className = '' }) => {
           src={event.imageUrl || 'https://images.pexels.com/photos/1770809/pexels-photo-1770809.jpeg?auto=compress&cs=tinysrgb&w=800'} 
           alt={event.title}
           className="w-full h-48 object-cover"
+          onError={e => {
+            const fallback = 'https://images.pexels.com/photos/1770809/pexels-photo-1770809.jpeg?auto=compress&cs=tinysrgb&w=800';
+            if (e.target.src !== fallback) {
+              e.target.onerror = null;
+              e.target.src = fallback;
+            }
+          }}
         />
         <div className="absolute top-4 left-4">
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(event.status)}`}>

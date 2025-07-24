@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Waves, User, LogOut, Calendar, Home, Plus, Lightbulb, Award } from 'lucide-react';
+import { Waves, User, LogOut, Calendar, Home, Plus, Lightbulb, Award, Trophy, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {
@@ -14,12 +14,14 @@ const Header = () => {
     { path: '/dashboard', label: 'Dashboard', icon: User },
     { path: '/events', label: 'Events', icon: Calendar },
     { path: '/eco-tips', label: 'Eco Tips', icon: Lightbulb },
+    { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     ...(user.role === 'ngo' ? [{ path: '/create-event', label: 'Create Event', icon: Plus }] : []),
     { path: '/certificates', label: 'Certificates', icon: Award }
   ] : [
     { path: '/', label: 'Home', icon: Home },
     { path: '/events', label: 'Events', icon: Calendar },
-    { path: '/eco-tips', label: 'Eco Tips', icon: Lightbulb }
+    { path: '/eco-tips', label: 'Eco Tips', icon: Lightbulb },
+    { path: '/leaderboard', label: 'Leaderboard', icon: Trophy }
   ];
 
   return (
@@ -58,6 +60,13 @@ const Header = () => {
                     src={user.avatar || 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400'}
                     alt={user.name}
                     className="w-8 h-8 rounded-full object-cover"
+                    onError={e => {
+                      const fallback = 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400';
+                      if (e.target.src !== fallback) {
+                        e.target.onerror = null;
+                        e.target.src = fallback;
+                      }
+                    }}
                   />
                   <span className="font-medium text-gray-700">{user.name}</span>
                   <span className={`px-2 py-1 text-xs rounded-full ${

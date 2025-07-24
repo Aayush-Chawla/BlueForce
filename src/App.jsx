@@ -12,6 +12,11 @@ import Dashboard from './pages/Dashboard';
 import CreateEvent from './pages/CreateEvent';
 import EcoTips from './pages/EcoTips';
 import Certificates from './pages/Certificates';
+import VolunteerLeaderboard from './pages/VolunteerLeaderboard';
+import ImpactStoryboard from './pages/ImpactStoryboard';
+import PostEventFeedback from './pages/PostEventFeedback';
+import ChatHelpButton from './components/ChatHelpButton';
+import ChatHelpCenter from './pages/ChatHelpCenter';
 
 // Protected Route component for authenticated users
 const ProtectedRoute = ({ children }) => {
@@ -52,6 +57,14 @@ const AppContent = () => {
           {/* Semi-public routes - accessible to all but with different content for authenticated users */}
           <Route path="/events" element={<Events />} />
           <Route path="/eco-tips" element={<EcoTips />} />
+          <Route path="/leaderboard" element={<VolunteerLeaderboard />} />
+          <Route path="/impact-storyboard" element={<ImpactStoryboard />} />
+          <Route path="/events/:eventId/feedback" element={
+            <ProtectedRoute>
+              <PostEventFeedback />
+            </ProtectedRoute>
+          } />
+          <Route path="/chat-help-center" element={<ChatHelpCenter />} />
           
           {/* Protected routes - require authentication */}
           <Route path="/dashboard" element={
@@ -74,6 +87,7 @@ const AppContent = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      <ChatHelpButton />
     </div>
   );
 };

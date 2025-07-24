@@ -87,6 +87,13 @@ const Home = () => {
                 src="https://images.pexels.com/photos/1770809/pexels-photo-1770809.jpeg?auto=compress&cs=tinysrgb&w=800"
                 alt="Beach cleanup volunteers"
                 className="relative rounded-3xl shadow-2xl w-full h-96 object-cover"
+                onError={e => {
+                  const fallback = 'https://images.pexels.com/photos/1770809/pexels-photo-1770809.jpeg?auto=compress&cs=tinysrgb&w=800';
+                  if (e.target.src !== fallback) {
+                    e.target.onerror = null;
+                    e.target.src = fallback;
+                  }
+                }}
               />
             </div>
           </div>
