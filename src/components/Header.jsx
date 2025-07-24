@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Waves, User, LogOut, Calendar, Home, Plus, Lightbulb, Award, Trophy, Sparkles } from 'lucide-react';
+import { Waves, User, LogOut, Calendar, Home, Plus, Lightbulb, Award, Trophy, Sparkles, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {
@@ -16,7 +16,8 @@ const Header = () => {
     { path: '/eco-tips', label: 'Eco Tips', icon: Lightbulb },
     { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     ...(user.role === 'ngo' ? [{ path: '/create-event', label: 'Create Event', icon: Plus }] : []),
-    { path: '/certificates', label: 'Certificates', icon: Award }
+    { path: '/certificates', label: 'Certificates', icon: Award },
+    ...(user.email === 'admin@blueforce.com' ? [{ path: '/admin', label: 'Admin Panel', icon: Shield }] : [])
   ] : [
     { path: '/', label: 'Home', icon: Home },
     { path: '/events', label: 'Events', icon: Calendar },
