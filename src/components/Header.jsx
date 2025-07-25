@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Waves, User, LogOut, Calendar, Home, Plus, Lightbulb, Award, Trophy, Sparkles, Shield } from 'lucide-react';
+import { Waves, User, LogOut, Calendar, Home, Plus, Lightbulb, Award, Trophy, Sparkles, Shield, MessageSquare  } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {
