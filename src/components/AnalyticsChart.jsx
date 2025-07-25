@@ -34,7 +34,7 @@ const AnalyticsChart = ({ data }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-purple-100 text-sm">Avg Participants</p>
-              <p className="text-2xl font-bold">{Math.round(data.totalParticipants / data.totalEvents)}</p>
+              <p className="text-2xl font-bold">{data.totalEvents > 0 ? Math.round(data.totalParticipants / data.totalEvents) : 0}</p>
             </div>
             <TrendingUp className="w-8 h-8 text-purple-200" />
           </div>
