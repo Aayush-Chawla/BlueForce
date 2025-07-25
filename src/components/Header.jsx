@@ -9,16 +9,26 @@ const Header = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  // Different navigation items based on authentication status
-  const navItems = user ? [
-    { path: '/dashboard', label: 'Dashboard', icon: User },
-    { path: '/events', label: 'Events', icon: Calendar },
-    { path: '/eco-tips', label: 'Eco Tips', icon: Lightbulb },
-    { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-    ...(user.role === 'ngo' ? [{ path: '/create-event', label: 'Create Event', icon: Plus }] : []),
-    { path: '/certificates', label: 'Certificates', icon: Award },
-    ...(user.email === 'admin@blueforce.com' ? [{ path: '/admin', label: 'Admin Panel', icon: Shield }] : [])
-  ] : [
+  // Check if user is super admin
+  const isSuperAdmin = user && user.email === 'admin@blueforce.com';
+
+  // Different navigation items based on authentication status and role
+  const navItems = user ? (
+    isSuperAdmin ? [
+      { path: '/admin', label: 'Admin Panel', icon: Shield },
+      { path: '/admin/users', label: 'User Management', icon: User },
+      { path: '/admin/events', label: 'Event Overview', icon: Calendar },
+      { path: '/admin/feedback', label: 'Feedback Viewer', icon: MessageSquare },
+      { path: '/admin/eco-tips', label: 'Eco Tips Manager', icon: Lightbulb }
+    ] : [
+      { path: '/dashboard', label: 'Dashboard', icon: User },
+      { path: '/events', label: 'Events', icon: Calendar },
+      { path: '/eco-tips', label: 'Eco Tips', icon: Lightbulb },
+      { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+      ...(user.role === 'ngo' ? [{ path: '/create-event', label: 'Create Event', icon: Plus }] : []),
+      { path: '/certificates', label: 'Certificates', icon: Award }
+    ]
+  ) : [
     { path: '/', label: 'Home', icon: Home },
     { path: '/events', label: 'Events', icon: Calendar },
     { path: '/eco-tips', label: 'Eco Tips', icon: Lightbulb },
