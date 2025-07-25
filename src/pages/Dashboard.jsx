@@ -12,6 +12,7 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { events } = useEvents();
   const dailyTip = getDailyTip();
+  const [showSocialGenerator, setShowSocialGenerator] = React.useState(false);
   
   if (!user) {
     return (
@@ -31,6 +32,14 @@ const Dashboard = () => {
 
   const upcomingEvents = userEvents.filter(event => event.status === 'upcoming');
   const completedEvents = userEvents.filter(event => event.status === 'completed');
+
+  // Analytics data for NGOs
+  const ngoAnalytics = user.role === 'ngo' ? {
+    totalEvents: events.filter(e => e.organizer.id === user.id).length,
+    totalParticipants: events.filter(e => e.organizer.id === user.id).reduce((total, event) => total + event.participants.length, 0),
+    monthlyEvents: [2, 3, 1, 4, 2, 3], // Mock data for last 6 months
+    monthlyParticipants: [25, 40, 15, 60, 30, 45] // Mock data for last 6 months
+  } : null;
 
   const stats = user.role === 'ngo' 
     ? [
@@ -88,6 +97,16 @@ const Dashboard = () => {
                 <span>Create Event</span>
               </Link>
             )}
+            
+            {user.role === 'ngo' && (
+              <button
+                onClick={() => setShowSocialGenerator(true)}
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105"
+              >
+                <Share2 className="w-5 h-5" />
+                <span>Create Social Post</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -95,6 +114,29 @@ const Dashboard = () => {
         <div className="mb-8">
           <EcoTipCard tip={dailyTip} isDaily={true} />
         </div>
+
+        {/* Analytics for NGOs */}
+        {user.role === 'ngo' && ngoAnalytics && (
+          <div className="mb-8">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                  <BarChart3 className="w-6 h-6 mr-2 text-sky-500" />
+                  Analytics Overview
+                </h2>
+              </div>
+              <AnalyticsChart data={ngoAnalytics} />
+            </div>
+          </div>
+        )}
+
+        {/* Social Media Generator Modal */}
+        {showSocialGenerator && (
+          <SocialMediaGenerator
+            events={userEvents}
+            onClose={() => setShowSocialGenerator(false)}
+          />
+        )}
 
         {/* Impact Storyboard Link */}
         <div className="mb-8">
