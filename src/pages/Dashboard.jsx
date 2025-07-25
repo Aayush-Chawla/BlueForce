@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Users, Award, Trash2, Plus, MapPin, Clock } from 'lucide-react';
+import { Calendar, Users, Award, Trash2, Plus, MapPin, Clock, Share2, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useEvents } from '../contexts/EventContext';
@@ -7,6 +7,8 @@ import { getDailyTip } from '../utils/ecoTipsData';
 import EventCard from '../components/EventCard';
 import EcoTipCard from '../components/EcoTipCard';
 import { mockFeedbacks } from '../utils/mockData';
+import AnalyticsChart from '../components/AnalyticsChart';
+import SocialMediaGenerator from '../components/SocialMediaGenerator';
 
 const Dashboard = () => {
   const { user } = useAuth();

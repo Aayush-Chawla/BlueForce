@@ -257,4 +257,64 @@ export const mockFeedbacks = [
     feedback: 'Loved the teamwork and the impact we made. Would love more refreshments next time!',
     createdAt: '2024-06-05T13:00:00Z'
   }
+];
+
+export const mockTemplates = [
+  {
+    id: 't1',
+    name: 'Participation Certificate',
+    type: 'participation',
+    description: 'Awarded for participating in a beach cleanup event.',
+    fields: ['name', 'eventTitle', 'dateIssued', 'wasteCollected'],
+    design: {
+      backgroundColor: '#f0f9ff',
+      borderColor: '#38bdf8',
+      titleColor: '#0ea5e9',
+      textColor: '#334155',
+      logoPosition: 'top-center',
+    },
+    content: {
+      title: 'Certificate of Participation',
+      subtitle: 'Awarded to {participantName}',
+      bodyText: 'For participating in {eventTitle} on {eventDate} and helping collect {wasteCollected} kg of waste. Thank you for making a difference!'
+    }
+  },
+  {
+    id: 't2',
+    name: 'Organizer Certificate',
+    type: 'organizer',
+    description: 'Awarded for organizing a successful event.',
+    fields: ['name', 'eventTitle', 'dateIssued'],
+    design: {
+      backgroundColor: '#fef9c3',
+      borderColor: '#facc15',
+      titleColor: '#eab308',
+      textColor: '#78350f',
+      logoPosition: 'top-center',
+    },
+    content: {
+      title: 'Certificate of Organization',
+      subtitle: 'Presented to {participantName}',
+      bodyText: 'For successfully organizing {eventTitle} on {eventDate}. Your leadership inspires others!'
+    }
+  },
+  {
+    id: 't3',
+    name: 'Top Collector',
+    type: 'achievement',
+    description: 'Awarded for collecting the most waste in an event.',
+    fields: ['name', 'eventTitle', 'dateIssued', 'wasteCollected'],
+    design: {
+      backgroundColor: '#f1f5f9',
+      borderColor: '#64748b',
+      titleColor: '#334155',
+      textColor: '#0f172a',
+      logoPosition: 'top-center',
+    },
+    content: {
+      title: 'Top Collector Award',
+      subtitle: 'Awarded to {participantName}',
+      bodyText: 'For collecting the most waste during {eventTitle} on {eventDate}: {wasteCollected} kg. Outstanding effort!'
+    }
+  },
 ]; 

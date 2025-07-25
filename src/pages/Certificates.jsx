@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useEvents } from '../contexts/EventContext';
 import CertificateTemplate from '../components/CertificateTemplate';
 import CertificateEditor from '../components/CertificateEditor';
+import { mockTemplates } from '../utils/mockData';
 
 const Certificates = () => {
   const { user } = useAuth();
@@ -13,6 +14,21 @@ const Certificates = () => {
   const [activeTab, setActiveTab] = useState(user?.role === 'ngo' ? 'templates' : 'certificates');
   const [showEditor, setShowEditor] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
+
+  // Group participants by their id for all events organized by the NGO
+  const eventParticipants = {};
+  if (user?.role === 'ngo' && events) {
+    events.forEach(event => {
+      if (event.organizer && event.organizer.id === user.id && event.participants) {
+        event.participants.forEach(participant => {
+          if (!eventParticipants[participant.id]) {
+            eventParticipants[participant.id] = [];
+          }
+          eventParticipants[participant.id].push(event);
+        });
+      }
+    });
+  }
 
   // Mock certificates data - in a real app, this would come from an API
   const mockCertificates = [
