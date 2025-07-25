@@ -86,92 +86,9 @@ const CSRImpact = () => {
         </div>
       </div>
 
-      {/* KPI CARDS */}
-      <div className="container mx-auto max-w-6xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Events Sponsored */}
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-2">Beach Events Sponsored</p>
-              <p className="text-3xl font-bold text-gray-800">{kpi.events}</p>
-              <span className="mt-2 flex items-center text-green-600 font-semibold text-sm">
-                {kpi.growth.events ? <ArrowUpRight className="w-4 h-4 mr-1" /> : <ArrowDownRight className="w-4 h-4 mr-1 text-red-500" />} 12%
-              </span>
-            </div>
-            <div className="p-3 bg-gradient-to-r from-sky-500 to-teal-500 rounded-full">
-              <Calendar className="w-6 h-6 text-white" />
-            </div>
-          </div>
-        </div>
-        {/* Waste Collected */}
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-2">Waste Collected (kg)</p>
-              <p className="text-3xl font-bold text-gray-800">{kpi.waste}</p>
-              <span className="mt-2 flex items-center text-green-600 font-semibold text-sm">
-                {kpi.growth.waste ? <ArrowUpRight className="w-4 h-4 mr-1" /> : <ArrowDownRight className="w-4 h-4 mr-1 text-red-500" />} 8%
-              </span>
-            </div>
-            <div className="p-3 bg-gradient-to-r from-sky-500 to-teal-500 rounded-full">
-              <Trash2 className="w-6 h-6 text-white" />
-            </div>
-          </div>
-        </div>
-        {/* Volunteers Engaged */}
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-2">Volunteers Engaged</p>
-              <p className="text-3xl font-bold text-gray-800">{kpi.volunteers}</p>
-              <span className="mt-2 flex items-center text-red-500 font-semibold text-sm">
-                {kpi.growth.volunteers ? <ArrowUpRight className="w-4 h-4 mr-1" /> : <ArrowDownRight className="w-4 h-4 mr-1" />} 2%
-              </span>
-            </div>
-            <div className="p-3 bg-gradient-to-r from-sky-500 to-teal-500 rounded-full">
-              <Users className="w-6 h-6 text-white" />
-            </div>
-          </div>
-        </div>
-        {/* XP Distributed */}
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-2">XP Distributed</p>
-              <p className="text-3xl font-bold text-gray-800">{kpi.xp}</p>
-              <span className="mt-2 flex items-center text-green-600 font-semibold text-sm">
-                {kpi.growth.xp ? <ArrowUpRight className="w-4 h-4 mr-1" /> : <ArrowDownRight className="w-4 h-4 mr-1 text-red-500" />} 15%
-              </span>
-            </div>
-            <div className="p-3 bg-gradient-to-r from-sky-500 to-teal-500 rounded-full">
-              <Award className="w-6 h-6 text-white" />
-            </div>
-          </div>
-        </div>
-      </div>
+      
 
-      {/* Gamification Panel Toggle */}
-      <div className="container mx-auto max-w-6xl mb-8">
-        <button 
-          onClick={() => setShowGamification(!showGamification)}
-          className="w-full bg-white rounded-xl shadow-md p-4 flex items-center justify-between hover:bg-sky-50 transition-colors"
-        >
-          <span className="font-semibold text-sky-700 flex items-center">
-            <Award className="w-5 h-5 mr-2" />
-            Gamification Progress
-          </span>
-          {showGamification ? 
-            <ChevronUp className="w-5 h-5 text-sky-700" /> : 
-            <ChevronDown className="w-5 h-5 text-sky-700" />}
-        </button>
-        
-        {/* Gamification Panel - Collapsible */}
-        {showGamification && (
-          <div className="animate-fade-in transition-opacity duration-700 mt-4">
-            <GamificationPanel />
-          </div>
-        )}  
-      </div>
+      
       {/* EVENT IMPACT TABLE */}
       <div className="container mx-auto max-w-6xl bg-white rounded-xl shadow-lg p-6 mb-8 overflow-x-auto">
         <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
@@ -231,15 +148,15 @@ const CSRImpact = () => {
             </button>
           </div>
           <div className="h-0.5 w-16 bg-gradient-to-r from-sky-500 to-teal-500 rounded-full mb-4 self-start"></div>
-          <div ref={barChartRef} className="w-full h-[260px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={events} margin={{ top: 20, right: 30, left: 20, bottom: 30 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={{ stroke: '#e0e0e0' }} />
-                <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={{ stroke: '#e0e0e0' }} />
-                <Tooltip cursor={{ fill: 'rgba(14, 165, 233, 0.1)' }} />
-                <Legend wrapperStyle={{ paddingTop: 10 }} />
-                <Bar dataKey="wasteCollected" fill="#0ea5e9" name="Waste Collected (kg)" radius={[4, 4, 0, 0]} />
+          <div ref={barChartRef} className="w-full">
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={events} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="wasteCollected" fill="#0ea5e9" name="Waste Collected (kg)" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -259,9 +176,9 @@ const CSRImpact = () => {
             </button>
           </div>
           <div className="h-0.5 w-16 bg-gradient-to-r from-sky-500 to-teal-500 rounded-full mb-4 self-start"></div>
-          <div ref={pieChartRef} className="w-full h-[280px] flex justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+          <div ref={pieChartRef} className="w-full flex justify-center">
+            <ResponsiveContainer width={260} height={280}>
+              <PieChart>
                 <Pie
                   data={events}
                   dataKey="xpDistributed"
@@ -269,17 +186,14 @@ const CSRImpact = () => {
                   cx="50%"
                   cy="50%"
                   outerRadius={100}
-                  innerRadius={40}
-                  paddingAngle={2}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}
+                  label
                 >
                   {events.map((entry, index) => (
-                    <Cell key={`cell-xp-${index}`} fill={COLORS[index % COLORS.length]} stroke="#fff" strokeWidth={1} />
+                    <Cell key={`cell-xp-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => [`${value} XP`, 'XP Distributed']} />
-                <Legend iconType="circle" layout="horizontal" verticalAlign="bottom" align="center" />
+                <Tooltip />
+                <Legend />
               </PieChart>
             </ResponsiveContainer>
           </div>
