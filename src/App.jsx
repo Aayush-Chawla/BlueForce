@@ -17,11 +17,23 @@ import ImpactStoryboard from './pages/ImpactStoryboard';
 import PostEventFeedback from './pages/PostEventFeedback';
 import ChatHelpButton from './components/ChatHelpButton';
 import ChatHelpCenter from './pages/ChatHelpCenter';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUserManagement from './pages/admin/AdminUserManagement';
+import AdminEventOverview from './pages/admin/AdminEventOverview';
+import AdminFeedbackViewer from './pages/admin/AdminFeedbackViewer';
+import AdminEcoTipsManager from './pages/admin/AdminEcoTipsManager';
 
 // Protected Route component for authenticated users
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
   return user ? <>{children}</> : <Navigate to="/login" replace />;
+};
+
+// Super Admin Route component
+const SuperAdminRoute = ({ children }) => {
+  const { user } = useAuth();
+  const isSuperAdmin = user && user.email === 'admin@blueforce.com';
+  return isSuperAdmin ? <>{children}</> : <Navigate to="/dashboard" replace />;
 };
 
 // Public Route component that redirects authenticated users to dashboard
@@ -81,6 +93,33 @@ const AppContent = () => {
             <ProtectedRoute>
               <Certificates />
             </ProtectedRoute>
+          } />
+          
+          {/* Super Admin Routes */}
+          <Route path="/admin" element={
+            <SuperAdminRoute>
+              <AdminDashboard />
+            </SuperAdminRoute>
+          } />
+          <Route path="/admin/users" element={
+            <SuperAdminRoute>
+              <AdminUserManagement />
+            </SuperAdminRoute>
+          } />
+          <Route path="/admin/events" element={
+            <SuperAdminRoute>
+              <AdminEventOverview />
+            </SuperAdminRoute>
+          } />
+          <Route path="/admin/feedback" element={
+            <SuperAdminRoute>
+              <AdminFeedbackViewer />
+            </SuperAdminRoute>
+          } />
+          <Route path="/admin/eco-tips" element={
+            <SuperAdminRoute>
+              <AdminEcoTipsManager />
+            </SuperAdminRoute>
           } />
           
           {/* Catch all route - redirect to appropriate page based on auth status */}

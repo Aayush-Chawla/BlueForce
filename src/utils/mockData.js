@@ -13,6 +13,15 @@ export const mockUsers = [
     avatar: 'https://images.pexels.com/photos/7456339/pexels-photo-7456339.jpeg?auto=compress&cs=tinysrgb&w=400'
   },
   {
+    id: 'admin',
+    name: 'Super Admin',
+    email: 'admin@blueforce.com',
+    role: 'admin',
+    bio: 'System administrator with full access to manage users and oversee platform operations',
+    location: 'System',
+    avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400'
+  },
+  {
     id: '2',
     name: 'Alex Chen',
     email: 'alex@example.com',
