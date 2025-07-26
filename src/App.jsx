@@ -8,16 +8,18 @@ import Home from './pages/Home';
 import Events from './pages/Events';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
 import CreateEvent from './pages/CreateEvent';
 import EcoTips from './pages/EcoTips';
-import Certificates from './pages/Certificates';
 import VolunteerLeaderboard from './pages/VolunteerLeaderboard';
 import ImpactStoryboard from './pages/ImpactStoryboard';
 import PostEventFeedback from './pages/PostEventFeedback';
 import ChatHelpButton from './components/ChatHelpButton';
 import ChatHelpCenter from './pages/ChatHelpCenter';
 import EventDetails from './pages/EventDetails';
+import NGODashboard from './pages/ngo/NGODashboard';
+import NGOCertificates from './pages/ngo/NGOCertificates';
+import ParticipantDashboard from './pages/participant/ParticipantDashboard';
+import ParticipantCertificates from './pages/participant/ParticipantCertificates';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUserManagement from './pages/admin/AdminUserManagement';
 import AdminEventOverview from './pages/admin/AdminEventOverview';
@@ -28,6 +30,18 @@ import AdminEcoTipsManager from './pages/admin/AdminEcoTipsManager';
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
   return user ? <>{children}</> : <Navigate to="/login" replace />;
+};
+
+// NGO Route component
+const NGORoute = ({ children }) => {
+  const { user } = useAuth();
+  return user && user.role === 'ngo' ? <>{children}</> : <Navigate to="/dashboard" replace />;
+};
+
+// Participant Route component
+const ParticipantRoute = ({ children }) => {
+  const { user } = useAuth();
+  return user && user.role === 'participant' ? <>{children}</> : <Navigate to="/dashboard" replace />;
 };
 
 // Super Admin Route component
@@ -41,6 +55,40 @@ const SuperAdminRoute = ({ children }) => {
 const PublicRoute = ({ children }) => {
   const { user } = useAuth();
   return !user ? <>{children}</> : <Navigate to="/dashboard" replace />;
+};
+
+// Dashboard Route component that redirects to role-specific dashboard
+const DashboardRoute = () => {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (user.role === 'ngo') {
+    return <NGODashboard />;
+  } else if (user.role === 'participant') {
+    return <ParticipantDashboard />;
+  }
+  
+  return <Navigate to="/" replace />;
+};
+
+// Certificates Route component that redirects to role-specific certificates
+const CertificatesRoute = () => {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (user.role === 'ngo') {
+    return <NGOCertificates />;
+  } else if (user.role === 'participant') {
+    return <ParticipantCertificates />;
+  }
+  
+  return <Navigate to="/" replace />;
 };
 
 // App content component that uses auth context
@@ -81,21 +129,13 @@ const AppContent = () => {
           <Route path="/chat-help-center" element={<ChatHelpCenter />} />
           
           {/* Protected routes - require authentication */}
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
+          <Route path="/dashboard" element={<DashboardRoute />} />
           <Route path="/create-event" element={
-            <ProtectedRoute>
+            <NGORoute>
               <CreateEvent />
-            </ProtectedRoute>
+            </NGORoute>
           } />
-          <Route path="/certificates" element={
-            <ProtectedRoute>
-              <Certificates />
-            </ProtectedRoute>
-          } />
+          <Route path="/certificates" element={<CertificatesRoute />} />
           
           {/* Super Admin Routes */}
           <Route path="/admin" element={

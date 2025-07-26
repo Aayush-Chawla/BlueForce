@@ -1,18 +1,13 @@
 import React from 'react';
 import { Calendar, Clock, MapPin, Users, Trash2, User } from 'lucide-react';
-import { QrCode } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import QRCode from 'react-qr-code';
-import { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const EventCard = ({ event, onJoin, onLeave, onEdit, className = '' }) => {
+const EventCard = ({ event, onJoin, onLeave, className = '' }) => {
   const { user } = useAuth();
   const isParticipant = user && event.participants.some(p => p.id === user.id);
-  const isOrganizer = user && event.organizer.id === user.id;
   const canJoin = user && user.role === 'participant' && !isParticipant && event.participants.length < event.maxParticipants;
   const canLeave = user && user.role === 'participant' && isParticipant;
-  const [showQR, setShowQR] = useState(false);
   const navigate = useNavigate();
 
   const formatDate = (dateString) => {
@@ -33,15 +28,6 @@ const EventCard = ({ event, onJoin, onLeave, onEdit, className = '' }) => {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
-
-  // Compose QR data
-  const qrData = user && event ? JSON.stringify({
-    userId: user.id,
-    userName: user.name,
-    eventId: event.id,
-    eventTitle: event.title,
-    eventDate: event.date
-  }) : '';
 
   return (
     <div
@@ -117,14 +103,6 @@ const EventCard = ({ event, onJoin, onLeave, onEdit, className = '' }) => {
           </div>
           
           <div className="flex space-x-2">
-            {isOrganizer && onEdit && (
-              <button
-                onClick={e => { e.stopPropagation(); onEdit(event.id); }}
-                className="px-4 py-2 bg-amber-500 text-white rounded-full hover:bg-amber-600 transition-colors text-sm font-medium"
-              >
-                Edit
-              </button>
-            )}
             {canJoin && onJoin && (
               <button
                 onClick={e => { e.stopPropagation(); onJoin(event.id); }}
@@ -144,9 +122,8 @@ const EventCard = ({ event, onJoin, onLeave, onEdit, className = '' }) => {
           </div>
         </div>
       </div>
-      {/* QR Code Modal removed from card */}
     </div>
   );
 };
 
-export default EventCard; 
+export default EventCard;

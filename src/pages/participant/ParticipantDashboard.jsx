@@ -1,44 +1,39 @@
 import React from 'react';
-import { Calendar, Users, Award, Trash2, Plus, MapPin, Clock, Share2, BarChart3, ChevronUp, ChevronDown } from 'lucide-react';
+import { Calendar, Users, Award, Trash2, MapPin, Clock, ChevronUp, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useEvents } from '../contexts/EventContext';
-import { getDailyTip } from '../utils/ecoTipsData';
-import EventCard from '../components/EventCard';
-import EcoTipCard from '../components/EcoTipCard';
-import { mockFeedbacks } from '../utils/mockData';
-import AnalyticsChart from '../components/AnalyticsChart';
-import SocialMediaGenerator from '../components/SocialMediaGenerator';
-import GamificationPanel from '../components/GamificationPanel';
+import { useAuth } from '../../contexts/AuthContext';
+import { useEvents } from '../../contexts/EventContext';
+import { getDailyTip } from '../../utils/ecoTipsData';
+import EventCard from '../../components/participant/EventCard';
+import EcoTipCard from '../../components/EcoTipCard';
+import { mockFeedbacks } from '../../utils/mockData';
+import GamificationPanel from '../../components/GamificationPanel';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import html2canvas from 'html2canvas';
-import { COLORS } from '../utils/chartColors';
+import { COLORS } from '../../utils/chartColors';
 import { Download } from 'lucide-react';
 
-
-const Dashboard = () => {
+const ParticipantDashboard = () => {
   const { user } = useAuth();
   const { events } = useEvents();
   const dailyTip = getDailyTip();
-  const [showSocialGenerator, setShowSocialGenerator] = React.useState(false);
   const [showGamification, setShowGamification] = React.useState(true);
   const barChartRef = React.useRef();
   const pieChartRef = React.useRef();
   
-  if (!user) {
+  if (!user || user.role !== 'participant') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-teal-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Please log in to view your dashboard</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h2>
+          <p className="text-gray-600">Only participants can access this dashboard.</p>
         </div>
       </div>
     );
   }
 
   const userEvents = events.filter(event =>
-    user.role === 'ngo'
-      ? event.organizer.id === user.id
-      : event.participants.some(p => p.id === user.id)
+    event.participants.some(p => p.id === user.id)
   );
 
   const upcomingEvents = userEvents.filter(event => event.status === 'upcoming');
@@ -77,27 +72,22 @@ const Dashboard = () => {
     },
   ];
 
-  // Analytics data for NGOs
-  const ngoAnalytics = user.role === 'ngo' ? {
-    totalEvents: events.filter(e => e.organizer.id === user.id).length,
-    totalParticipants: events.filter(e => e.organizer.id === user.id).reduce((total, event) => total + event.participants.length, 0),
-    monthlyEvents: [2, 3, 1, 4, 2, 3], // Mock data for last 6 months
-    monthlyParticipants: [25, 40, 15, 60, 30, 45] // Mock data for last 6 months
-  } : null;
+  const stats = [
+    { icon: Calendar, label: 'Events Joined', value: userEvents.length },
+    { icon: Trash2, label: 'Waste Collected', value: `${user.totalWasteCollected || 0} kg` },
+    { icon: Award, label: 'Eco Score', value: user.ecoScore || 850 },
+    { icon: Users, label: 'Community Impact', value: '12.5 tons' }
+  ];
 
-  const stats = user.role === 'ngo' 
-    ? [
-      { icon: Calendar, label: 'Events Organized', value: events.filter(e => e.organizer.id === user.id).length },
-      { icon: Users, label: 'Total Participants', value: events.filter(e => e.organizer.id === user.id).reduce((total, event) => total + event.participants.length, 0) },
-      { icon: Trash2, label: 'Waste Collected', value: '3.2 tons' },
-      { icon: Award, label: 'Impact Score', value: '95%' }
-    ]
-    : [
-      { icon: Calendar, label: 'Events Joined', value: userEvents.length },
-      { icon: Trash2, label: 'Waste Collected', value: `${user.totalWasteCollected || 0} kg` },
-      { icon: Award, label: 'Eco Score', value: user.ecoScore || 850 },
-      { icon: Users, label: 'Community Impact', value: '12.5 tons' }
-    ];
+  const exportChart = async (chartRef, filename) => {
+    if (chartRef.current) {
+      const canvas = await html2canvas(chartRef.current);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-teal-50">
@@ -120,9 +110,7 @@ const Dashboard = () => {
               />
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">Welcome back, {user.name}!</h1>
-                <p className="text-gray-600">
-                  {user.role === 'ngo' ? 'NGO Organizer' : 'Environmental Participant'}
-                </p>
+                <p className="text-gray-600">Environmental Participant</p>
                 {user.location && (
                   <p className="text-sm text-gray-500 flex items-center mt-1">
                     <MapPin className="w-4 h-4 mr-1" />
@@ -131,57 +119,13 @@ const Dashboard = () => {
                 )}
               </div>
             </div>
-
-            {user.role === 'ngo' && (
-              <Link
-                to="/create-event"
-                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 transition-all transform hover:scale-105"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Create Event</span>
-              </Link>
-            )}
-            
-            {user.role === 'ngo' && (
-              <button
-                onClick={() => setShowSocialGenerator(true)}
-                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105"
-              >
-                <Share2 className="w-5 h-5" />
-                <span>Create Social Post</span>
-              </button>
-            )}
           </div>
         </div>
-
 
         {/* Daily Eco Tip */}
         <div className="mb-8">
           <EcoTipCard tip={dailyTip} isDaily={true} />
         </div>
-
-        {/* Analytics for NGOs */}
-        {user.role === 'ngo' && ngoAnalytics && (
-          <div className="mb-8">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-                  <BarChart3 className="w-6 h-6 mr-2 text-sky-500" />
-                  Analytics Overview
-                </h2>
-              </div>
-              <AnalyticsChart data={ngoAnalytics} />
-            </div>
-          </div>
-        )}
-
-        {/* Social Media Generator Modal */}
-        {showSocialGenerator && (
-          <SocialMediaGenerator
-            events={userEvents}
-            onClose={() => setShowSocialGenerator(false)}
-          />
-        )}
 
         {/* Impact Storyboard Link */}
         <div className="mb-8">
@@ -203,6 +147,7 @@ const Dashboard = () => {
             </a>
           </div>
         </div>
+
         {/* Gamification Panel Toggle */}
         <div className="container mx-auto max-w-6xl mb-8">
           <button
@@ -225,6 +170,7 @@ const Dashboard = () => {
             </div>
           )}
         </div>
+
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map(({ icon: Icon, label, value }) => (
@@ -255,7 +201,7 @@ const Dashboard = () => {
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
               <Clock className="w-6 h-6 mr-2 text-sky-500" />
-              {user.role === 'ngo' ? 'Your Upcoming Events' : 'Events You\'re Joining'}
+              Events You're Joining
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {upcomingEvents.map(event => (
@@ -270,15 +216,14 @@ const Dashboard = () => {
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
               <Award className="w-6 h-6 mr-2 text-teal-500" />
-              {user.role === 'ngo' ? 'Your Completed Events' : 'Events You\'ve Completed'}
+              Events You've Completed
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {completedEvents.map(event => (
                 <div key={event.id} className="relative">
                   <EventCard event={event} className="opacity-75" />
                   {/* Feedback button for eligible volunteers */}
-                  {user.role === 'participant' &&
-                    !mockFeedbacks.some(fb => fb.eventId === event.id) &&
+                  {!mockFeedbacks.some(fb => fb.eventId === event.id) &&
                     event.participants.some(p => p.id === user.id) && (
                       <a
                         href={`/events/${event.id}/feedback`}
@@ -286,29 +231,6 @@ const Dashboard = () => {
                       >
                         Give Feedback
                       </a>
-                    )}
-                  {/* Show feedback to organizer */}
-                  {user.role === 'ngo' &&
-                    mockFeedbacks.filter(fb => fb.eventId === event.id).length > 0 && (
-                      <div className="mt-4 bg-sky-50 border border-sky-100 rounded-lg p-4">
-                        <h4 className="font-semibold text-sky-700 mb-2 text-sm">Volunteer Feedback</h4>
-                        <ul className="space-y-2">
-                          {mockFeedbacks.filter(fb => fb.eventId === event.id).map((fb, i) => (
-                            <li key={i} className="bg-white rounded p-3 shadow-sm border border-sky-50">
-                              <div className="flex items-center gap-1 mb-1">
-                                {[...Array(fb.rating)].map((_, idx) => (
-                                  <span key={idx} className="text-yellow-400">★</span>
-                                ))}
-                                {[...Array(5 - fb.rating)].map((_, idx) => (
-                                  <span key={idx} className="text-gray-300">★</span>
-                                ))}
-                              </div>
-                              <div className="text-gray-700 text-sm">{fb.feedback}</div>
-                              <div className="text-xs text-gray-400 mt-1">{new Date(fb.createdAt).toLocaleString()}</div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
                     )}
                 </div>
               ))}
@@ -322,23 +244,19 @@ const Dashboard = () => {
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Calendar className="w-12 h-12 text-gray-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">
-              {user.role === 'ngo' ? 'No events organized yet' : 'No events joined yet'}
-            </h3>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">No events joined yet</h3>
             <p className="text-gray-500 mb-6">
-              {user.role === 'ngo'
-                ? 'Start organizing your first beach cleaning event to make a difference!'
-                : 'Join your first beach cleaning event to start making a difference!'
-              }
+              Join your first beach cleaning event to start making a difference!
             </p>
             <Link
-              to={user.role === 'ngo' ? '/create-event' : '/events'}
+              to="/events"
               className="px-6 py-3 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 transition-all transform hover:scale-105"
             >
-              {user.role === 'ngo' ? 'Create Your First Event' : 'Browse Events'}
+              Browse Events
             </Link>
           </div>
         )}
+
         {/* CHARTS SECTION */}
         <div className="container mx-auto max-w-6xl grid md:grid-cols-2 gap-8 mb-8">
           {/* Bar Chart */}
@@ -406,10 +324,9 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
 };
 
-export default Dashboard; 
+export default ParticipantDashboard;

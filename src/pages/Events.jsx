@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Search, Filter, MapPin, Calendar } from 'lucide-react';
-import EventCard from '../components/EventCard';
 import { useEvents } from '../contexts/EventContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -11,6 +10,14 @@ const Events = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
 
+  // Dynamically import the appropriate EventCard based on user role
+  const EventCard = React.useMemo(() => {
+    if (user?.role === 'ngo') {
+      return React.lazy(() => import('../components/ngo/EventCard'));
+    } else {
+      return React.lazy(() => import('../components/participant/EventCard'));
+    }
+  }, [user?.role]);
   const filteredEvents = events
     .filter(event => 
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -102,16 +109,18 @@ const Events = () => {
               <Calendar className="w-6 h-6 mr-2 text-sky-500" />
               Upcoming Events ({upcomingEvents.length})
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {upcomingEvents.map(event => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  onJoin={handleJoinEvent}
-                  onLeave={handleLeaveEvent}
-                />
-              ))}
-            </div>
+            <React.Suspense fallback={<div>Loading...</div>}>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {upcomingEvents.map(event => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    onJoin={user?.role === 'participant' ? handleJoinEvent : undefined}
+                    onLeave={user?.role === 'participant' ? handleLeaveEvent : undefined}
+                  />
+                ))}
+              </div>
+            </React.Suspense>
           </div>
         )}
 
@@ -122,15 +131,17 @@ const Events = () => {
               <MapPin className="w-6 h-6 mr-2 text-teal-500" />
               Past Events ({pastEvents.length})
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {pastEvents.map(event => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  className="opacity-75"
-                />
-              ))}
-            </div>
+            <React.Suspense fallback={<div>Loading...</div>}>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {pastEvents.map(event => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    className="opacity-75"
+                  />
+                ))}
+              </div>
+            </React.Suspense>
           </div>
         )}
 
