@@ -1,3 +1,5 @@
+import React from 'react';
+import { Calendar, Users, Award, Trash2, Plus, MapPin, Clock, Share2, BarChart3, ChevronUp, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useEvents } from '../contexts/EventContext';
@@ -5,89 +7,24 @@ import { getDailyTip } from '../utils/ecoTipsData';
 import EventCard from '../components/EventCard';
 import EcoTipCard from '../components/EcoTipCard';
 import { mockFeedbacks } from '../utils/mockData';
-import React, { useRef, useState } from 'react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer
-} from 'recharts';
-import html2canvas from 'html2canvas';
-import {
-  ArrowUpRight, ArrowDownRight, Download, Award, Users, Trash2, Calendar, ChevronDown, ChevronUp, Plus, MapPin, Clock
-} from 'lucide-react';
+import AnalyticsChart from '../components/AnalyticsChart';
+import SocialMediaGenerator from '../components/SocialMediaGenerator';
 import GamificationPanel from '../components/GamificationPanel';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import html2canvas from 'html2canvas';
+import { COLORS } from '../utils/chartColors';
+import { Download } from 'lucide-react';
 
-// FIX: Renamed to avoid conflict with context `events`
-const staticEvents = [
-  {
-    id: 'e456',
-    name: 'Juhu Beach Cleanup',
-    location: 'Juhu Beach, Mumbai',
-    date: '2025-07-28',
-    wasteCollected: 45,
-    volunteers: 32,
-    xpDistributed: 1280,
-    sponsor: 'Acme Corp',
-  },
-  {
-    id: 'e789',
-    name: 'Versova Drive',
-    location: 'Versova Beach, Mumbai',
-    date: '2025-08-01',
-    wasteCollected: 64,
-    volunteers: 50,
-    xpDistributed: 2100,
-    sponsor: 'GreenFuture Ltd',
-  },
-  {
-    id: 'e101',
-    name: 'Marine Lines Cleanup',
-    location: 'Marine Lines, Mumbai',
-    date: '2025-08-15',
-    wasteCollected: 18,
-    volunteers: 15,
-    xpDistributed: 600,
-    sponsor: 'Acme Corp',
-  },
-];
-
-
-const COLORS = ['#0ea5e9', '#14b8a6', '#f59e42', '#6366f1', '#f43f5e'];
-
-
-function getBadge(event) {
-  if (event.wasteCollected > 50) return { label: 'Gold', color: 'bg-yellow-400 text-yellow-900' };
-  if (event.wasteCollected >= 25) return { label: 'Silver', color: 'bg-gray-300 text-gray-800' };
-  return { label: 'Bronze', color: 'bg-amber-700 text-amber-100' };
-}
 
 const Dashboard = () => {
   const { user } = useAuth();
   const { events } = useEvents();
   const dailyTip = getDailyTip();
-  const barChartRef = useRef();
-  const pieChartRef = useRef();
-const kpi = {
-    events: events.length,
-    waste: events.reduce((sum, e) => sum + e.wasteCollected, 0),
-    volunteers: events.reduce((sum, e) => sum + e.volunteers, 0),
-    xp: events.reduce((sum, e) => sum + e.xpDistributed, 0),
-    growth: {
-      events: true,
-      waste: true,
-      volunteers: false,
-      xp: true,
-    }};
-  const exportChart = async (ref, filename) => {
-    if (!ref.current) return;
-    const canvas = await html2canvas(ref.current, { backgroundColor: '#fff', scale: 2 });
-    const imgData = canvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.href = imgData;
-    link.download = filename;
-    link.click();
-  };
-
-  const [showGamification, setShowGamification] = useState(true);
-
+  const [showSocialGenerator, setShowSocialGenerator] = React.useState(false);
+  const [showGamification, setShowGamification] = React.useState(true);
+  const barChartRef = React.useRef();
+  const pieChartRef = React.useRef();
+  
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-teal-50 flex items-center justify-center">
@@ -107,7 +44,48 @@ const kpi = {
   const upcomingEvents = userEvents.filter(event => event.status === 'upcoming');
   const completedEvents = userEvents.filter(event => event.status === 'completed');
 
-  const stats = user.role === 'ngo'
+  const staticEvents = [
+    {
+      id: 'e456',
+      name: 'Juhu Beach Cleanup',
+      location: 'Juhu Beach, Mumbai',
+      date: '2025-07-28',
+      wasteCollected: 45,
+      volunteers: 32,
+      xpDistributed: 1280,
+      sponsor: 'Acme Corp',
+    },
+    {
+      id: 'e789',
+      name: 'Versova Drive',
+      location: 'Versova Beach, Mumbai',
+      date: '2025-08-01',
+      wasteCollected: 64,
+      volunteers: 50,
+      xpDistributed: 2100,
+      sponsor: 'GreenFuture Ltd',
+    },
+    {
+      id: 'e101',
+      name: 'Marine Lines Cleanup',
+      location: 'Marine Lines, Mumbai',
+      date: '2025-08-15',
+      wasteCollected: 18,
+      volunteers: 15,
+      xpDistributed: 600,
+      sponsor: 'Acme Corp',
+    },
+  ];
+
+  // Analytics data for NGOs
+  const ngoAnalytics = user.role === 'ngo' ? {
+    totalEvents: events.filter(e => e.organizer.id === user.id).length,
+    totalParticipants: events.filter(e => e.organizer.id === user.id).reduce((total, event) => total + event.participants.length, 0),
+    monthlyEvents: [2, 3, 1, 4, 2, 3], // Mock data for last 6 months
+    monthlyParticipants: [25, 40, 15, 60, 30, 45] // Mock data for last 6 months
+  } : null;
+
+  const stats = user.role === 'ngo' 
     ? [
       { icon: Calendar, label: 'Events Organized', value: events.filter(e => e.organizer.id === user.id).length },
       { icon: Users, label: 'Total Participants', value: events.filter(e => e.organizer.id === user.id).reduce((total, event) => total + event.participants.length, 0) },
@@ -163,6 +141,16 @@ const kpi = {
                 <span>Create Event</span>
               </Link>
             )}
+            
+            {user.role === 'ngo' && (
+              <button
+                onClick={() => setShowSocialGenerator(true)}
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105"
+              >
+                <Share2 className="w-5 h-5" />
+                <span>Create Social Post</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -171,6 +159,29 @@ const kpi = {
         <div className="mb-8">
           <EcoTipCard tip={dailyTip} isDaily={true} />
         </div>
+
+        {/* Analytics for NGOs */}
+        {user.role === 'ngo' && ngoAnalytics && (
+          <div className="mb-8">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                  <BarChart3 className="w-6 h-6 mr-2 text-sky-500" />
+                  Analytics Overview
+                </h2>
+              </div>
+              <AnalyticsChart data={ngoAnalytics} />
+            </div>
+          </div>
+        )}
+
+        {/* Social Media Generator Modal */}
+        {showSocialGenerator && (
+          <SocialMediaGenerator
+            events={userEvents}
+            onClose={() => setShowSocialGenerator(false)}
+          />
+        )}
 
         {/* Impact Storyboard Link */}
         <div className="mb-8">
