@@ -17,6 +17,7 @@ import ImpactStoryboard from './pages/ImpactStoryboard';
 import PostEventFeedback from './pages/PostEventFeedback';
 import ChatHelpButton from './components/ChatHelpButton';
 import ChatHelpCenter from './pages/ChatHelpCenter';
+import EventDetails from './pages/EventDetails';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUserManagement from './pages/admin/AdminUserManagement';
 import AdminEventOverview from './pages/admin/AdminEventOverview';
@@ -68,6 +69,7 @@ const AppContent = () => {
           
           {/* Semi-public routes - accessible to all but with different content for authenticated users */}
           <Route path="/events" element={<Events />} />
+          <Route path="/events/:id" element={<EventDetails />} />
           <Route path="/eco-tips" element={<EcoTips />} />
           <Route path="/leaderboard" element={<VolunteerLeaderboard />} />
           <Route path="/impact-storyboard" element={<ImpactStoryboard />} />

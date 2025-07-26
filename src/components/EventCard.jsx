@@ -1,6 +1,10 @@
 import React from 'react';
 import { Calendar, Clock, MapPin, Users, Trash2, User } from 'lucide-react';
+import { QrCode } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import QRCode from 'react-qr-code';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const EventCard = ({ event, onJoin, onLeave, onEdit, className = '' }) => {
   const { user } = useAuth();
@@ -8,6 +12,8 @@ const EventCard = ({ event, onJoin, onLeave, onEdit, className = '' }) => {
   const isOrganizer = user && event.organizer.id === user.id;
   const canJoin = user && user.role === 'participant' && !isParticipant && event.participants.length < event.maxParticipants;
   const canLeave = user && user.role === 'participant' && isParticipant;
+  const [showQR, setShowQR] = useState(false);
+  const navigate = useNavigate();
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -28,8 +34,20 @@ const EventCard = ({ event, onJoin, onLeave, onEdit, className = '' }) => {
     }
   };
 
+  // Compose QR data
+  const qrData = user && event ? JSON.stringify({
+    userId: user.id,
+    userName: user.name,
+    eventId: event.id,
+    eventTitle: event.title,
+    eventDate: event.date
+  }) : '';
+
   return (
-    <div className={`bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 ${className}`}>
+    <div
+      className={`bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer ${className}`}
+      onClick={() => navigate(`/events/${event.id}`)}
+    >
       <div className="relative">
         <img 
           src={event.imageUrl || 'https://images.pexels.com/photos/1770809/pexels-photo-1770809.jpeg?auto=compress&cs=tinysrgb&w=800'} 
@@ -101,7 +119,7 @@ const EventCard = ({ event, onJoin, onLeave, onEdit, className = '' }) => {
           <div className="flex space-x-2">
             {isOrganizer && onEdit && (
               <button
-                onClick={() => onEdit(event.id)}
+                onClick={e => { e.stopPropagation(); onEdit(event.id); }}
                 className="px-4 py-2 bg-amber-500 text-white rounded-full hover:bg-amber-600 transition-colors text-sm font-medium"
               >
                 Edit
@@ -109,7 +127,7 @@ const EventCard = ({ event, onJoin, onLeave, onEdit, className = '' }) => {
             )}
             {canJoin && onJoin && (
               <button
-                onClick={() => onJoin(event.id)}
+                onClick={e => { e.stopPropagation(); onJoin(event.id); }}
                 className="px-4 py-2 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 transition-all transform hover:scale-105 text-sm font-medium"
               >
                 Join Event
@@ -117,7 +135,7 @@ const EventCard = ({ event, onJoin, onLeave, onEdit, className = '' }) => {
             )}
             {canLeave && onLeave && (
               <button
-                onClick={() => onLeave(event.id)}
+                onClick={e => { e.stopPropagation(); onLeave(event.id); }}
                 className="px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors text-sm font-medium"
               >
                 Leave Event
@@ -126,6 +144,7 @@ const EventCard = ({ event, onJoin, onLeave, onEdit, className = '' }) => {
           </div>
         </div>
       </div>
+      {/* QR Code Modal removed from card */}
     </div>
   );
 };
