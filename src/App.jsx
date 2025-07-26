@@ -17,7 +17,6 @@ import ImpactStoryboard from './pages/ImpactStoryboard';
 import PostEventFeedback from './pages/PostEventFeedback';
 import ChatHelpButton from './components/ChatHelpButton';
 import ChatHelpCenter from './pages/ChatHelpCenter';
-import CSRImpact from './pages/CSRImpact';
 
 // Protected Route component for authenticated users
 const ProtectedRoute = ({ children }) => {
@@ -59,7 +58,6 @@ const AppContent = () => {
           <Route path="/events" element={<Events />} />
           <Route path="/eco-tips" element={<EcoTips />} />
           <Route path="/leaderboard" element={<VolunteerLeaderboard />} />
-          <Route path="/csr-impact" element={<CSRImpact />} />
           <Route path="/impact-storyboard" element={<ImpactStoryboard />} />
           <Route path="/events/:eventId/feedback" element={
             <ProtectedRoute>
