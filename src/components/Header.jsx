@@ -20,14 +20,21 @@ const Header = () => {
       { path: '/admin/events', label: 'Event Overview', icon: Calendar },
       { path: '/admin/feedback', label: 'Feedback Viewer', icon: MessageSquare },
       { path: '/admin/eco-tips', label: 'Eco Tips Manager', icon: Lightbulb }
-    ] : [
-      { path: '/dashboard', label: 'Dashboard', icon: User },
-      { path: '/events', label: 'Events', icon: Calendar },
-      { path: '/eco-tips', label: 'Eco Tips', icon: Lightbulb },
-      { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-      ...(user.role === 'ngo' ? [{ path: '/create-event', label: 'Create Event', icon: Plus }] : []),
-      { path: '/certificates', label: 'Certificates', icon: Award }
-    ]
+    ] : (
+      user.role === 'ngo' ? [
+        { path: '/dashboard', label: 'Dashboard', icon: User },
+        { path: '/events', label: 'Events', icon: Calendar },
+        { path: '/eco-tips', label: 'Eco Tips', icon: Lightbulb },
+        { path: '/create-event', label: 'Create Event', icon: Plus },
+        { path: '/certificates', label: 'Certificates', icon: Award }
+      ] : [
+        { path: '/dashboard', label: 'Dashboard', icon: User },
+        { path: '/events', label: 'Events', icon: Calendar },
+        { path: '/eco-tips', label: 'Eco Tips', icon: Lightbulb },
+        { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+        { path: '/certificates', label: 'Certificates', icon: Award }
+      ]
+    )
   ) : [
     { path: '/', label: 'Home', icon: Home },
     { path: '/events', label: 'Events', icon: Calendar },
