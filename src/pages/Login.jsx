@@ -23,6 +23,7 @@ const Login = () => {
   };
 
   const demoUsers = [
+    { email: 'admin@blueforce.com', password: 'password', role: 'Super Admin' },
     { email: 'contact@oceanguardians.org', password: 'password', role: 'NGO Organizer' },
     { email: 'alex@example.com', password: 'password', role: 'Participant' },
     { email: 'maria@example.com', password: 'password', role: 'Participant' }
