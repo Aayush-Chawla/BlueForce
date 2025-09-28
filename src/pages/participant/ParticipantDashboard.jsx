@@ -122,13 +122,18 @@ const ParticipantDashboard = () => {
           </div>
         </div>
 
-        {/* Daily Eco Tip */}
-        <div className="mb-8">
-          <EcoTipCard tip={dailyTip} isDaily={true} />
-        </div>
+        {/* Bio Section */}
+        {user.bio && (
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">About</h2>
+            <p className="text-gray-600 leading-relaxed">{user.bio}</p>
+          </div>
+        )}
+
+        
 
         {/* Impact Storyboard Link */}
-        <div className="mb-8">
+        {/* <div className="mb-8">
           <div className="bg-gradient-to-r from-sky-100 to-teal-100 rounded-xl shadow flex flex-col md:flex-row items-center justify-between p-6 md:p-8 gap-4">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-r from-sky-500 to-teal-500 rounded-full">
@@ -146,7 +151,7 @@ const ParticipantDashboard = () => {
               View Storyboard
             </a>
           </div>
-        </div>
+        </div> */}
 
         {/* Gamification Panel Toggle */}
         <div className="container mx-auto max-w-6xl mb-8">
@@ -188,13 +193,10 @@ const ParticipantDashboard = () => {
           ))}
         </div>
 
-        {/* Bio Section */}
-        {user.bio && (
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">About</h2>
-            <p className="text-gray-600 leading-relaxed">{user.bio}</p>
-          </div>
-        )}
+        {/* Daily Eco Tip */}
+        <div className="mb-8">
+          <EcoTipCard tip={dailyTip} isDaily={true} />
+        </div>
 
         {/* Upcoming Events */}
         {upcomingEvents.length > 0 && (
