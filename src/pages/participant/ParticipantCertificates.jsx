@@ -1,11 +1,22 @@
 import React, { useState } from 'react';
-import { Award, Download, Share2, Calendar, MapPin, User, CheckCircle, Search, Filter } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { Award, Download, Share2, Calendar, MapPin, CheckCircle, Search, Filter } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
-const Certificates = () => {
+const ParticipantCertificates = () => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
+
+  if (!user || user.role !== 'participant') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-teal-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h2>
+          <p className="text-gray-600">Only participants can access their certificates.</p>
+        </div>
+      </div>
+    );
+  }
 
   // Mock certificates data - in a real app, this would come from an API
   const mockCertificates = [
@@ -95,16 +106,6 @@ const Certificates = () => {
     }
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-teal-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Please log in to view your certificates</h2>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-teal-50">
       <div className="container mx-auto px-4 py-8">
@@ -141,7 +142,7 @@ const Certificates = () => {
           
           <div className="bg-white rounded-xl shadow-lg p-6 text-center">
             <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <User className="w-6 h-6 text-white" />
+              <Award className="w-6 h-6 text-white" />
             </div>
             <h3 className="text-2xl font-bold text-gray-800">
               {mockCertificates.filter(cert => cert.certificateType === 'leadership').length}
@@ -203,7 +204,7 @@ const Certificates = () => {
                 <div className="p-6">
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center text-gray-600">
-                      <User className="w-4 h-4 mr-2" />
+                      <Award className="w-4 h-4 mr-2" />
                       <span className="text-sm">Issued by {certificate.organizerName}</span>
                     </div>
                     <div className="flex items-center text-gray-600">
@@ -264,4 +265,4 @@ const Certificates = () => {
   );
 };
 
-export default Certificates; 
+export default ParticipantCertificates;
