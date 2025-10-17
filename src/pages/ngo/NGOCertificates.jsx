@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Award, Plus, Edit, Eye } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useEvents } from '../../contexts/EventContext';
-import CertificateTemplate from '../../components/CertificateTemplate';
-import CertificateEditor from '../../components/CertificateEditor';
+import { useAuth } from '../../contexts';
+import { useEvents } from '../../contexts';
+import CertificateTemplate from '../../components/certificate/CertificateTemplate';
+import CertificateEditor from '../../components/certificate/CertificateEditor';
 import { mockTemplates } from '../../utils/mockData';
 
 const NGOCertificates = () => {

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Filter, MapPin, Calendar } from 'lucide-react';
-import { useEvents } from '../contexts/EventContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useEvents, useAuth } from '../contexts';
 
 const Events = () => {
   const { events, joinEvent, leaveEvent } = useEvents();
@@ -13,9 +12,9 @@ const Events = () => {
   // Dynamically import the appropriate EventCard based on user role
   const EventCard = React.useMemo(() => {
     if (user?.role === 'ngo') {
-      return React.lazy(() => import('../components/ngo/EventCard'));
+      return React.lazy(() => import('../features/ngo/components/EventCard'));
     } else {
-      return React.lazy(() => import('../components/participant/EventCard'));
+      return React.lazy(() => import('../features/participant/components/EventCard'));
     }
   }, [user?.role]);
   const filteredEvents = events

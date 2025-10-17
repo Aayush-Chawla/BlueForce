@@ -1,9 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import { EventProvider } from './contexts/EventContext';
-import { useAuth } from './contexts/AuthContext';
-import Header from './components/Header';
+import { AuthProvider, EventProvider } from './contexts';
+import { useAuth } from './contexts';
+import Header from './components/layout/Header';
+import ChatHelpButton from './components/common/ChatHelpButton';
 import Home from './pages/Home';
 import Events from './pages/Events';
 import Login from './pages/Login';
@@ -13,7 +13,6 @@ import EcoTips from './pages/EcoTips';
 import VolunteerLeaderboard from './pages/VolunteerLeaderboard';
 import ImpactStoryboard from './pages/ImpactStoryboard';
 import PostEventFeedback from './pages/PostEventFeedback';
-import ChatHelpButton from './components/ChatHelpButton';
 import ChatHelpCenter from './pages/ChatHelpCenter';
 import EventDetails from './pages/EventDetails';
 import NGODashboard from './pages/ngo/NGODashboard';
@@ -65,7 +64,12 @@ const DashboardRoute = () => {
     return <Navigate to="/login" replace />;
   }
   
-  if (user.role === 'ngo') {
+  // Check if user is super admin
+  const isSuperAdmin = user && user.email === 'admin@blueforce.com';
+  
+  if (isSuperAdmin) {
+    return <Navigate to="/admin" replace />;
+  } else if (user.role === 'ngo') {
     return <NGODashboard />;
   } else if (user.role === 'participant') {
     return <ParticipantDashboard />;
