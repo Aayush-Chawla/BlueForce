@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Search, Filter, Award, HelpCircle, Brain, Leaf, ChevronDown, ChevronUp } from 'lucide-react';
 import { ecoTips, faqs, mcqQuestions } from '../utils/ecoTipsData';
-import EcoTipCard from '../components/EcoTipCard';
-import { useAuth } from '../contexts/AuthContext';
+import EcoTipCard from '../components/common/EcoTipCard';
+import { useAuth } from '../contexts';
 
 const EcoTips = () => {
   const { user } = useAuth();

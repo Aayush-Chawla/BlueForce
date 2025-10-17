@@ -1,8 +1,8 @@
 import React from 'react';
 import { Shield, Users } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts';
 import { mockUsers } from '../../utils/mockData';
-import UserManagementTable from '../../components/admin/UserManagementTable';
+import { UserManagementTable } from '../../features/admin/components';
 
 const AdminUserManagement = () => {
   const { user } = useAuth();

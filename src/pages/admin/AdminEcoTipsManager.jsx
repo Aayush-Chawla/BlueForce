@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Shield, Lightbulb, Plus, Edit, Trash2, Search, Filter, Save, X } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts';
 import { ecoTips } from '../../utils/ecoTipsData';
 
 const AdminEcoTipsManager = () => {

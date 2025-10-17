@@ -1,8 +1,8 @@
 import React from 'react';
 import { Shield, Calendar } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useEvents } from '../../contexts/EventContext';
-import EventOverviewTable from '../../components/admin/EventOverviewTable';
+import { useAuth } from '../../contexts';
+import { useEvents } from '../../contexts';
+import { EventOverviewTable } from '../../features/admin/components';
 
 const AdminEventOverview = () => {
   const { user } = useAuth();
