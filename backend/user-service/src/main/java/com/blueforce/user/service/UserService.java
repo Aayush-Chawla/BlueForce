@@ -18,7 +18,13 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return switch (user.getRole().toUpperCase()) {
+        String role = user.getRole() == null ? "" : user.getRole().toUpperCase();
+        // Map VOLUNTEER to PARTICIPANT for now
+        if ("VOLUNTEER".equals(role)) {
+            role = "PARTICIPANT";
+        }
+
+        return switch (role) {
             case "ADMIN" -> new AdminProfileDto(
                     user.getId(), user.getEmail(), user.getRole(),
                     user.getName(), user.getPhone()
