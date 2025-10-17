@@ -1,13 +1,12 @@
 import React from 'react';
 import { Calendar, Users, Award, Trash2, MapPin, Clock, ChevronUp, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { useEvents } from '../../contexts/EventContext';
+import { useAuth, useEvents } from '../../contexts';
 import { getDailyTip } from '../../utils/ecoTipsData';
-import EventCard from '../../components/participant/EventCard';
-import EcoTipCard from '../../components/EcoTipCard';
+import { EventCard } from '../../features/participant/components';
+import EcoTipCard from '../../components/common/EcoTipCard';
+import GamificationPanel from '../../features/shared/components/GamificationPanel';
 import { mockFeedbacks } from '../../utils/mockData';
-import GamificationPanel from '../../components/GamificationPanel';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import html2canvas from 'html2canvas';
 import { COLORS } from '../../utils/chartColors';

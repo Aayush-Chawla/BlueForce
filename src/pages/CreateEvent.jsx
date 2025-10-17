@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useEvents } from '../contexts/EventContext';
-import EventForm from '../components/EventForm';
+import { useAuth, useEvents } from '../contexts';
+import { EventForm } from '../features/ngo/components';
 
 const CreateEvent = () => {
   const { user } = useAuth();

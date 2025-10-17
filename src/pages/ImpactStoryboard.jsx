@@ -1,6 +1,6 @@
 import React from 'react';
 import { mockImpactStories } from '../utils/mockData';
-import StoryCard from '../components/StoryCard';
+import StoryCard from '../components/common/StoryCard';
 import { Sparkles } from 'lucide-react';
 
 const ImpactStoryboard = () => {
