@@ -18,9 +18,6 @@ public class User {
     private String email;
 
     @Column(nullable = false)
-    private String password;
-
-    @Column(nullable = false)
     private String role; // ADMIN, NGO, PARTICIPANT
 
     // 🔹 Common fields
@@ -40,4 +37,18 @@ public class User {
 
     // 🔹 Participant-specific fields
     private int points = 0;
+
+    @PrePersist
+    public void onCreate() {
+        if (this.createdAt == null) {
+            this.createdAt = java.time.LocalDateTime.now();
+        }
+        // ensure default active
+        this.active = (this.active);
+    }
+
+    @PreUpdate
+    public void onUpdate() {
+        // reserved for future timestamp updates
+    }
 }
