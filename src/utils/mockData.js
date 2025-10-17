@@ -16,7 +16,7 @@ export const mockUsers = [
     id: 'admin',
     name: 'Super Admin',
     email: 'admin@blueforce.com',
-    role: 'admin',
+    role: 'superadmin',
     bio: 'System administrator with full access to manage users and oversee platform operations',
     location: 'System',
     avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400'

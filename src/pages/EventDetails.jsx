@@ -1,8 +1,8 @@
 // EventDetails.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEvents } from '../contexts/EventContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useEvents } from '../contexts';
+import { useAuth } from '../contexts';
 import QRCode from 'react-qr-code';
 import { QrCode, ArrowLeft, Star, Users, MapPin, Calendar as CalendarIcon, Clock, Waves, Trash2, Share2 } from 'lucide-react';
 import { mockFeedbacks } from '../utils/mockData';

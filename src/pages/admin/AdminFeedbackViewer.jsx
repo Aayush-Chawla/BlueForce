@@ -1,9 +1,8 @@
 import React from 'react';
 import { Shield, MessageSquare } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useEvents } from '../../contexts/EventContext';
+import { useAuth, useEvents } from '../../contexts';
 import { mockFeedbacks } from '../../utils/mockData';
-import FeedbackViewer from '../../components/admin/FeedbackViewer';
+import { FeedbackViewer } from '../../features/admin/components';
 
 const AdminFeedbackViewer = () => {
   const { user } = useAuth();

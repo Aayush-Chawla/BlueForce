@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Waves, Users, Calendar, Award, ArrowRight, Leaf, Fish, Recycle } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts';
 
 const Home = () => {
   const { user } = useAuth();

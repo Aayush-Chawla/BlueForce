@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useEvents } from '../contexts/EventContext';
+import { useAuth, useEvents } from '../contexts';
 import { mockFeedbacks } from '../utils/mockData';
 import { Star } from 'lucide-react';
 

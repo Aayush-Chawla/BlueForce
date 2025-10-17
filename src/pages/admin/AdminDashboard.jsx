@@ -1,10 +1,8 @@
 import React from 'react';
 import { Shield, Users, Calendar, BarChart3, MessageSquare, Lightbulb, Trophy, Award, TrendingUp, Trash2 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useEvents } from '../../contexts/EventContext';
+import { useAuth, useEvents } from '../../contexts';
 import { mockUsers, mockFeedbacks } from '../../utils/mockData';
-import AdminStatsCard from '../../components/admin/AdminStatsCard';
-import ImpactDashboard from '../../components/admin/ImpactDashboard';
+import { AdminStatsCard, ImpactDashboard } from '../../features/admin/components';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
