@@ -97,7 +97,7 @@ const Dashboard = () => {
         </div>
 
         {/* Impact Storyboard Link */}
-        <div className="mb-8">
+        {/* <div className="mb-8">
           <div className="bg-gradient-to-r from-sky-100 to-teal-100 rounded-xl shadow flex flex-col md:flex-row items-center justify-between p-6 md:p-8 gap-4">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-r from-sky-500 to-teal-500 rounded-full">
@@ -115,7 +115,7 @@ const Dashboard = () => {
               View Storyboard
             </a>
           </div>
-        </div>
+        </div> */}
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -135,12 +135,12 @@ const Dashboard = () => {
         </div>
 
         {/* Bio Section */}
-        {user.bio && (
+        {/* {user.bio && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
             <h2 className="text-xl font-bold text-gray-800 mb-4">About</h2>
             <p className="text-gray-600 leading-relaxed">{user.bio}</p>
           </div>
-        )}
+        )} */}
 
         {/* Upcoming Events */}
         {upcomingEvents.length > 0 && (

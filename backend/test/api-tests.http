@@ -1,0 +1,175 @@
+### BlueForce API Tests
+### Use this file with REST Client extension in VS Code or similar tools
+
+@baseUrl = http://localhost:4000/api
+@token = your_jwt_token_here
+
+### Authentication Endpoints
+
+### Register New User
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "Test123!",
+  "role": "volunteer"
+}
+
+### Login User
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "john.doe@example.com",
+  "password": "password123"
+}
+
+### Get Current User Info
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+### Update User Profile
+PUT {{baseUrl}}/auth/profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Updated Name",
+  "email": "updated@example.com"
+}
+
+### Change Password
+PUT {{baseUrl}}/auth/change-password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "currentPassword": "password123",
+  "newPassword": "NewPassword123!"
+}
+
+### Logout
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{token}}
+
+### Get All Users (Admin only)
+GET {{baseUrl}}/auth/users
+Authorization: Bearer {{token}}
+
+### Get User Statistics (Admin only)
+GET {{baseUrl}}/auth/stats
+Authorization: Bearer {{token}}
+
+### Delete User (Admin only)
+DELETE {{baseUrl}}/auth/users/1
+Authorization: Bearer {{token}}
+
+### Health Check
+GET http://localhost:4000/health
+
+### Get All Events
+GET {{baseUrl}}/events
+
+### Get Events with Filters
+GET {{baseUrl}}/events?upcoming=true
+GET {{baseUrl}}/events?location=Marina
+GET {{baseUrl}}/events?ngo_id=3
+
+### Get Event Details
+GET {{baseUrl}}/events/1
+
+### Create New Event (NGO only)
+POST {{baseUrl}}/events
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "ngo_id": 3,
+  "title": "Test Beach Cleanup",
+  "description": "This is a test event for API testing",
+  "location": "Test Beach, Test City",
+  "date_time": "2024-03-15T09:00:00.000Z"
+}
+
+### Update Event (NGO owner or admin only)
+PUT {{baseUrl}}/events/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated Beach Cleanup Title",
+  "description": "Updated description for the event"
+}
+
+### Delete Event (NGO owner or admin only)
+DELETE {{baseUrl}}/events/1
+Authorization: Bearer {{token}}
+
+### Enroll in Event (Volunteer)
+POST {{baseUrl}}/events/1/enroll
+Authorization: Bearer {{token}}
+
+### Get Event Participants (NGO owner or admin only)
+GET {{baseUrl}}/events/1/participants
+Authorization: Bearer {{token}}
+
+### Cancel Enrollment
+DELETE {{baseUrl}}/events/1/enroll
+Authorization: Bearer {{token}}
+
+### Get User Enrollments
+GET {{baseUrl}}/events/users/1/events
+Authorization: Bearer {{token}}
+
+### Mark Participation Complete (NGO only)
+POST {{baseUrl}}/events/1/complete
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "user_id": 1
+}
+
+### Get Event Statistics (NGO owner or admin only)
+GET {{baseUrl}}/events/1/stats
+Authorization: Bearer {{token}}
+
+### Get Events by NGO
+GET {{baseUrl}}/events/ngo/3
+Authorization: Bearer {{token}}
+
+### Test Error Cases
+
+### Create Event without Authentication
+POST {{baseUrl}}/events
+Content-Type: application/json
+
+{
+  "ngo_id": 3,
+  "title": "Unauthorized Event",
+  "description": "This should fail",
+  "location": "Test Location",
+  "date_time": "2024-03-15T09:00:00.000Z"
+}
+
+### Create Event with Invalid Data
+POST {{baseUrl}}/events
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "ngo_id": 3,
+  "title": "ab",
+  "description": "This should fail validation",
+  "location": "Test Location",
+  "date_time": "2020-01-01T09:00:00.000Z"
+}
+
+### Get Non-existent Event
+GET {{baseUrl}}/events/999
+
+### Enroll in Non-existent Event
+POST {{baseUrl}}/events/999/enroll
+Authorization: Bearer {{token}}

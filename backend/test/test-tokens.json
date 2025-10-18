@@ -1,0 +1,83 @@
+{
+  "generated_at": "2025-10-18T07:13:15.430Z",
+  "tokens": {
+    "volunteer": {
+      "john.doe@example.com": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiam9obi5kb2VAZXhhbXBsZS5jb20iLCJyb2xlIjoidm9sdW50ZWVyIiwiaWF0IjoxNzYwNzcxNTk1LCJleHAiOjE3NjEzNzYzOTV9.OM9xCgeUFLxayNhFQWcFKZLdjMDoMemlDLHUQ9Hlu0Y",
+        "user": {
+          "id": 1,
+          "name": "John Doe",
+          "email": "john.doe@example.com",
+          "role": "volunteer"
+        }
+      },
+      "jane.smith@example.com": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsImVtYWlsIjoiamFuZS5zbWl0aEBleGFtcGxlLmNvbSIsInJvbGUiOiJ2b2x1bnRlZXIiLCJpYXQiOjE3NjA3NzE1OTUsImV4cCI6MTc2MTM3NjM5NX0.NxKUVse7IcPEErJkCAfpzyUP3NPSqwCQrv9pKRBbTAQ",
+        "user": {
+          "id": 2,
+          "name": "Jane Smith",
+          "email": "jane.smith@example.com",
+          "role": "volunteer"
+        }
+      },
+      "mike.johnson@example.com": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsImVtYWlsIjoibWlrZS5qb2huc29uQGV4YW1wbGUuY29tIiwicm9sZSI6InZvbHVudGVlciIsImlhdCI6MTc2MDc3MTU5NSwiZXhwIjoxNzYxMzc2Mzk1fQ.1t-SWPgRYfg2bzvD1A6EHXh97vbt92FrOWOQLC3h2sk",
+        "user": {
+          "id": 3,
+          "name": "Mike Johnson",
+          "email": "mike.johnson@example.com",
+          "role": "volunteer"
+        }
+      },
+      "sarah.wilson@example.com": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjQsImVtYWlsIjoic2FyYWgud2lsc29uQGV4YW1wbGUuY29tIiwicm9sZSI6InZvbHVudGVlciIsImlhdCI6MTc2MDc3MTU5NSwiZXhwIjoxNzYxMzc2Mzk1fQ.qIIvneUmvaxynb3mvaR0u2iZrwh7elzvK7FL6cS-dNo",
+        "user": {
+          "id": 4,
+          "name": "Sarah Wilson",
+          "email": "sarah.wilson@example.com",
+          "role": "volunteer"
+        }
+      }
+    },
+    "ngo": {
+      "contact@ecowarriors.org": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjUsImVtYWlsIjoiY29udGFjdEBlY293YXJyaW9ycy5vcmciLCJyb2xlIjoibmdvIiwiaWF0IjoxNzYwNzcxNTk1LCJleHAiOjE3NjEzNzYzOTV9.UBM2aVrzWJteh4SQdcG7B0n6p8udF5U37wX0Gx1iw0w",
+        "user": {
+          "id": 5,
+          "name": "Eco Warriors NGO",
+          "email": "contact@ecowarriors.org",
+          "role": "ngo"
+        }
+      },
+      "info@oceanguardians.org": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjYsImVtYWlsIjoiaW5mb0BvY2Vhbmd1YXJkaWFucy5vcmciLCJyb2xlIjoibmdvIiwiaWF0IjoxNzYwNzcxNTk1LCJleHAiOjE3NjEzNzYzOTV9.iSZWLtvrkleygDNLD7SXjKLQTq8qafgP_bOWpXTzMow",
+        "user": {
+          "id": 6,
+          "name": "Ocean Guardians",
+          "email": "info@oceanguardians.org",
+          "role": "ngo"
+        }
+      },
+      "admin@beachcleaners.org": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjcsImVtYWlsIjoiYWRtaW5AYmVhY2hjbGVhbmVycy5vcmciLCJyb2xlIjoibmdvIiwiaWF0IjoxNzYwNzcxNTk1LCJleHAiOjE3NjEzNzYzOTV9.nzYk4DbrHQPoeiTkaed8zOgTvZ02wt3sRYrD4pSNZXE",
+        "user": {
+          "id": 7,
+          "name": "Beach Cleaners United",
+          "email": "admin@beachcleaners.org",
+          "role": "ngo"
+        }
+      }
+    },
+    "admin": {
+      "admin@blueforce.com": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjgsImVtYWlsIjoiYWRtaW5AYmx1ZWZvcmNlLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MDc3MTU5NSwiZXhwIjoxNzYxMzc2Mzk1fQ.LSAnEaEHf68eyEubKSIzzeQRiDB4_UzV9E6NYbDrnkM",
+        "user": {
+          "id": 8,
+          "name": "System Admin",
+          "email": "admin@blueforce.com",
+          "role": "admin"
+        }
+      }
+    }
+  }
+}
