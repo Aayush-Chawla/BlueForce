@@ -8,4 +8,5 @@ public class AuthResponse {
     private String email;
     private String role;
     private boolean verified;
+    private String token;
 }

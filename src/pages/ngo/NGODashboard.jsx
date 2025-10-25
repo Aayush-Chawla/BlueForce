@@ -33,9 +33,9 @@ const NGODashboard = () => {
     );
   }
 
-  const userEvents = events.filter(event => event.organizer.id === user.id);
-  const upcomingEvents = userEvents.filter(event => event.status === 'upcoming');
-  const completedEvents = userEvents.filter(event => event.status === 'completed');
+  const userEvents = events.filter(event => event.ngoId === user?.id);
+  const upcomingEvents = userEvents.filter(event => event.isUpcoming);
+  const completedEvents = userEvents.filter(event => event.status === 'COMPLETED');
 
   const staticEvents = [
     {
@@ -72,15 +72,15 @@ const NGODashboard = () => {
 
   // Analytics data for NGOs
   const ngoAnalytics = {
-    totalEvents: events.filter(e => e.organizer.id === user.id).length,
-    totalParticipants: events.filter(e => e.organizer.id === user.id).reduce((total, event) => total + event.participants.length, 0),
+    totalEvents: userEvents.length,
+    totalParticipants: userEvents.reduce((total, event) => total + (event.currentParticipants || 0), 0),
     monthlyEvents: [2, 3, 1, 4, 2, 3], // Mock data for last 6 months
     monthlyParticipants: [25, 40, 15, 60, 30, 45] // Mock data for last 6 months
   };
 
   const stats = [
-    { icon: Calendar, label: 'Events Organized', value: events.filter(e => e.organizer.id === user.id).length },
-    { icon: Users, label: 'Total Participants', value: events.filter(e => e.organizer.id === user.id).reduce((total, event) => total + event.participants.length, 0) },
+    { icon: Calendar, label: 'Events Organized', value: userEvents.length },
+    { icon: Users, label: 'Total Participants', value: userEvents.reduce((total, event) => total + (event.currentParticipants || 0), 0) },
     { icon: Trash2, label: 'Waste Collected', value: '3.2 tons' },
     { icon: Award, label: 'Impact Score', value: '95%' }
   ];

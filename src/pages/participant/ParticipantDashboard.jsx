@@ -32,11 +32,11 @@ const ParticipantDashboard = () => {
   }
 
   const userEvents = events.filter(event =>
-    event.participants.some(p => p.id === user.id)
+    event.isUpcoming || event.status === 'COMPLETED'
   );
 
-  const upcomingEvents = userEvents.filter(event => event.status === 'upcoming');
-  const completedEvents = userEvents.filter(event => event.status === 'completed');
+  const upcomingEvents = userEvents.filter(event => event.isUpcoming);
+  const completedEvents = userEvents.filter(event => event.status === 'COMPLETED');
 
   const staticEvents = [
     {
@@ -224,15 +224,14 @@ const ParticipantDashboard = () => {
                 <div key={event.id} className="relative">
                   <EventCard event={event} className="opacity-75" />
                   {/* Feedback button for eligible volunteers */}
-                  {!mockFeedbacks.some(fb => fb.eventId === event.id) &&
-                    event.participants.some(p => p.id === user.id) && (
-                      <a
-                        href={`/events/${event.id}/feedback`}
-                        className="absolute bottom-4 right-4 px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-white rounded-full shadow hover:from-yellow-500 hover:to-yellow-600 font-semibold text-sm transition-all"
-                      >
-                        Give Feedback
-                      </a>
-                    )}
+                  {!mockFeedbacks.some(fb => fb.eventId === event.id) && (
+                    <a
+                      href={`/events/${event.id}/feedback`}
+                      className="absolute bottom-4 right-4 px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-white rounded-full shadow hover:from-yellow-500 hover:to-yellow-600 font-semibold text-sm transition-all"
+                    >
+                      Give Feedback
+                    </a>
+                  )}
                 </div>
               ))}
             </div>

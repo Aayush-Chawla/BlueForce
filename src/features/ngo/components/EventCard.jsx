@@ -5,11 +5,24 @@ import { useNavigate } from 'react-router-dom';
 
 const EventCard = ({ event, onEdit, className = '' }) => {
   const { user } = useAuth();
-  const isOrganizer = user && event.organizer.id === user.id;
+  
+  // Debug logging
+  console.log('NGO EventCard - User:', user);
+  console.log('NGO EventCard - User name:', user?.name);
+  console.log('NGO EventCard - Event:', event);
+  
+  const isOrganizer = user && event.ngoId === user.id;
   const navigate = useNavigate();
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (dateTime) => {
+    let date;
+    if (Array.isArray(dateTime)) {
+      // Handle array format [year, month, day, hour, minute]
+      date = new Date(dateTime[0], dateTime[1] - 1, dateTime[2], dateTime[3], dateTime[4] || 0);
+    } else {
+      date = new Date(dateTime);
+    }
+    return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -17,13 +30,37 @@ const EventCard = ({ event, onEdit, className = '' }) => {
     });
   };
 
-  const getStatusColor = (status) => {
+  const formatTime = (dateTime) => {
+    let date;
+    if (Array.isArray(dateTime)) {
+      // Handle array format [year, month, day, hour, minute]
+      date = new Date(dateTime[0], dateTime[1] - 1, dateTime[2], dateTime[3], dateTime[4] || 0);
+    } else {
+      date = new Date(dateTime);
+    }
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusColor = (status, isUpcoming) => {
+    if (isUpcoming) return 'bg-blue-100 text-blue-800';
     switch (status) {
-      case 'upcoming': return 'bg-blue-100 text-blue-800';
-      case 'ongoing': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'ACTIVE': return 'bg-green-100 text-green-800';
+      case 'COMPLETED': return 'bg-gray-100 text-gray-800';
+      case 'CANCELLED': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusText = (status, isUpcoming) => {
+    if (isUpcoming) return 'Upcoming';
+    switch (status) {
+      case 'ACTIVE': return 'Active';
+      case 'COMPLETED': return 'Completed';
+      case 'CANCELLED': return 'Cancelled';
+      default: return 'Unknown';
     }
   };
 
@@ -46,13 +83,13 @@ const EventCard = ({ event, onEdit, className = '' }) => {
           }}
         />
         <div className="absolute top-4 left-4">
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(event.status)}`}>
-            {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(event.status, event.isUpcoming)}`}>
+            {getStatusText(event.status, event.isUpcoming)}
           </span>
         </div>
         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
           <span className="text-sm font-medium text-gray-700">
-            {event.participants.length}/{event.maxParticipants} joined
+            {event.currentParticipants || 0}/{event.maxParticipants || 0} joined
           </span>
         </div>
       </div>
@@ -64,11 +101,11 @@ const EventCard = ({ event, onEdit, className = '' }) => {
         <div className="space-y-2 mb-4">
           <div className="flex items-center text-gray-600">
             <Calendar className="w-4 h-4 mr-2" />
-            <span className="text-sm">{formatDate(event.date)}</span>
+            <span className="text-sm">{formatDate(event.dateTime)}</span>
           </div>
           <div className="flex items-center text-gray-600">
             <Clock className="w-4 h-4 mr-2" />
-            <span className="text-sm">{event.time}</span>
+            <span className="text-sm">{formatTime(event.dateTime)}</span>
           </div>
           <div className="flex items-center text-gray-600">
             <MapPin className="w-4 h-4 mr-2" />
@@ -76,7 +113,7 @@ const EventCard = ({ event, onEdit, className = '' }) => {
           </div>
           <div className="flex items-center text-gray-600">
             <User className="w-4 h-4 mr-2" />
-            <span className="text-sm">Organized by {event.organizer.name}</span>
+            <span className="text-sm">NGO ID: {event.ngoId}</span>
           </div>
         </div>
 
@@ -96,7 +133,7 @@ const EventCard = ({ event, onEdit, className = '' }) => {
           <div className="flex items-center space-x-2">
             <Users className="w-4 h-4 text-gray-500" />
             <span className="text-sm text-gray-600">
-              {event.participants.length} participants
+              {event.currentParticipants || 0} participants
             </span>
           </div>
           

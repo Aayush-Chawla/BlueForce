@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { mockEvents } from '../utils/mockData';
+import { eventService } from '../services/eventService';
+import { useAuth } from './AuthContext';
 
 const EventContext = createContext(undefined);
 
@@ -13,89 +14,189 @@ export const useEvents = () => {
 
 export const EventProvider = ({ children }) => {
   const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const { user } = useAuth();
+
+  // Load events from API
+  const loadEvents = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const eventsData = await eventService.getEvents();
+      setEvents(eventsData || []);
+    } catch (err) {
+      console.error('Error loading events:', err);
+      setError(err.message);
+      // Fallback to empty array if API fails
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Load events from localStorage or use mock data
-    const savedEvents = localStorage.getItem('beachCleanupEvents');
-    if (savedEvents) {
-      setEvents(JSON.parse(savedEvents));
-    } else {
-      setEvents(mockEvents);
-      localStorage.setItem('beachCleanupEvents', JSON.stringify(mockEvents));
-    }
+    loadEvents();
   }, []);
 
-  const saveEvents = (newEvents) => {
-    setEvents(newEvents);
-    localStorage.setItem('beachCleanupEvents', JSON.stringify(newEvents));
+  const addEvent = async (eventData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Transform frontend data to match backend API
+      const apiEventData = {
+        title: eventData.name || eventData.title,
+        description: eventData.description,
+        location: eventData.location,
+        dateTime: eventData.dateTime, // Use the properly formatted dateTime from form
+        maxParticipants: eventData.maxParticipants || 50,
+        contactEmail: eventData.contactEmail || user?.email,
+        contactPhone: eventData.contactPhone || user?.phone
+      };
+
+      const newEvent = await eventService.createEvent(apiEventData);
+      setEvents(prevEvents => [...prevEvents, newEvent]);
+      return newEvent;
+    } catch (err) {
+      console.error('Error creating event:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const addEvent = (eventData) => {
-    const newEvent = {
-      ...eventData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      participants: []
-    };
-    const newEvents = [...events, newEvent];
-    saveEvents(newEvents);
+  const updateEvent = async (eventId, eventData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const updatedEvent = await eventService.updateEvent(eventId, eventData);
+      setEvents(prevEvents => 
+        prevEvents.map(event => 
+          event.id === eventId ? updatedEvent : event
+        )
+      );
+      return updatedEvent;
+    } catch (err) {
+      console.error('Error updating event:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateEvent = (id, eventData) => {
-    const newEvents = events.map(event =>
-      event.id === id ? { ...event, ...eventData } : event
-    );
-    saveEvents(newEvents);
+  const deleteEvent = async (eventId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await eventService.deleteEvent(eventId);
+      setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
+    } catch (err) {
+      console.error('Error deleting event:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteEvent = (id) => {
-    const newEvents = events.filter(event => event.id !== id);
-    saveEvents(newEvents);
+  const joinEvent = async (eventId, userId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log('Attempting to join event:', eventId, 'for user:', userId);
+      console.log('Auth token:', localStorage.getItem('authToken'));
+      console.log('User from context:', user);
+      
+      const enrollmentData = {
+        userId: parseInt(userId), // Convert to number as backend expects Long
+        message: 'Joining the event' // Optional message
+      };
+      
+      console.log('Enrollment data:', enrollmentData);
+      const result = await eventService.enrollInEvent(eventId, enrollmentData);
+      console.log('Join event result:', result);
+      
+      // Refresh the events to get updated participant count
+      await loadEvents();
+      
+      return result;
+    } catch (err) {
+      console.error('Error joining event:', err);
+      console.error('Error details:', err.message, err.status, err.response);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const joinEvent = (eventId, userId) => {
-    const newEvents = events.map(event => {
-      if (event.id === eventId) {
-        const userAlreadyJoined = event.participants.some(p => p.id === userId);
-        if (!userAlreadyJoined && event.participants.length < event.maxParticipants) {
-          // In a real app, we'd fetch the full user data
-          const mockUser = {
-            id: userId,
-            name: 'Current User',
-            email: 'user@example.com',
-            role: 'participant'
-          };
-          return {
-            ...event,
-            participants: [...event.participants, mockUser]
-          };
-        }
+  const leaveEvent = async (eventId, userId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // First get participants to find the participant ID
+      const participants = await eventService.getEventParticipants(eventId);
+      const participant = participants.find(p => p.userId === userId);
+      
+      if (participant) {
+        await eventService.cancelEnrollment(eventId, participant.id);
+        // Refresh the events to get updated participant count
+        await loadEvents();
       }
-      return event;
-    });
-    saveEvents(newEvents);
+    } catch (err) {
+      console.error('Error leaving event:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const leaveEvent = (eventId, userId) => {
-    const newEvents = events.map(event => {
-      if (event.id === eventId) {
-        return {
-          ...event,
-          participants: event.participants.filter(p => p.id !== userId)
-        };
-      }
-      return event;
-    });
-    saveEvents(newEvents);
+  const getEventParticipants = async (eventId) => {
+    try {
+      return await eventService.getEventParticipants(eventId);
+    } catch (err) {
+      console.error('Error fetching participants:', err);
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  const updateParticipantStatus = async (eventId, participantId, statusData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await eventService.updateParticipantStatus(eventId, participantId, statusData);
+      // Refresh events to get updated data
+      await loadEvents();
+      return result;
+    } catch (err) {
+      console.error('Error updating participant status:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshEvents = () => {
+    return loadEvents();
   };
 
   const value = {
     events,
+    loading,
+    error,
     addEvent,
     updateEvent,
     deleteEvent,
     joinEvent,
-    leaveEvent
+    leaveEvent,
+    getEventParticipants,
+    updateParticipantStatus,
+    refreshEvents
   };
 
   return (

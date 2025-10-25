@@ -44,7 +44,7 @@ const Header = () => {
                 <div className="flex items-center space-x-2">
                   <img
                     src={user.avatar || 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400'}
-                    alt={user.name}
+                    alt={user.name || 'User'}
                     className="w-8 h-8 rounded-full object-cover"
                     onError={e => {
                       const fallback = 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400';
@@ -54,7 +54,7 @@ const Header = () => {
                       }
                     }}
                   />
-                  <span className="font-medium text-gray-700">{user.name}</span>
+                  <span className="font-medium text-gray-700">{user.name || 'User'}</span>
                   <span className={`px-2 py-1 text-xs rounded-full ${
                     user.role === 'ngo' 
                       ? 'bg-amber-100 text-amber-800' 
