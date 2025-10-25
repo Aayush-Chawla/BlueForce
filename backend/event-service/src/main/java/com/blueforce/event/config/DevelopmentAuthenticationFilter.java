@@ -27,17 +27,17 @@ public class DevelopmentAuthenticationFilter extends OncePerRequestFilter {
                                   FilterChain filterChain) throws ServletException, IOException {
         
         logger.info("=== DEVELOPMENT AUTH FILTER DEBUG ===");
-        logger.info("Development mode: {}", developmentMode);
-        logger.info("Request URI: {}", request.getRequestURI());
-        logger.info("Request method: {}", request.getMethod());
+        logger.info("Development mode: " + developmentMode);
+        logger.info("Request URI: " + request.getRequestURI());
+        logger.info("Request method: " + request.getMethod());
         
         if (developmentMode) {
             String authHeader = request.getHeader("Authorization");
-            logger.info("Authorization header: {}", authHeader);
+            logger.info("Authorization header: " + authHeader);
             
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = authHeader.substring(7);
-                logger.info("Token: {}", token);
+                logger.info("Token: " + token);
                 
                 // Check if this is a mock token (base64 encoded JSON)
                 if (isMockToken(token)) {

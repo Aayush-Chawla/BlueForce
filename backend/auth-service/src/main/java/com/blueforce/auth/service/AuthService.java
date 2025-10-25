@@ -53,10 +53,7 @@ public class AuthService {
         // Publish event to Kafka
         publishUserRegisteredEvent(saved);
 
-        // Generate token for immediate use after registration
-        String token = jwtUtil.generateToken(saved.getEmail(), saved.getRole(), saved.getId());
-
-        return new AuthResponse(saved.getId(), saved.getEmail(), saved.getRole(), saved.isVerified(), token);
+        return new AuthResponse(saved.getId(), saved.getEmail(), saved.getRole(), saved.isVerified());
     }
 
     // ✅ Login
@@ -70,7 +67,7 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
         }
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRole(), user.getId());
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
         return new LoginResponse("Login successful", token);
     }
 
