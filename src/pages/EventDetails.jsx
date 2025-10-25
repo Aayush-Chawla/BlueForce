@@ -9,37 +9,76 @@ import { mockFeedbacks } from '../utils/mockData';
 
 const EventDetails = () => {
   const { id } = useParams();
-  const { events, joinEvent, leaveEvent } = useEvents();
+  const { events, joinEvent, leaveEvent, loading } = useEvents();
   const { user } = useAuth();
-  const event = events.find(e => e.id === id);
   const [showQR, setShowQR] = useState(false);
+  const [feedbackFilter, setFeedbackFilter] = useState('all'); // all, good, bad
   const navigate = useNavigate();
+  
+  // Always call hooks at the top level
+  const event = events.find(e => e.id == id); // Use == instead of === to handle string/number comparison
+  
+  // Debug logging
+  console.log('EventDetails - Looking for event ID:', id);
+  console.log('EventDetails - Available events:', events);
+  console.log('EventDetails - Found event:', event);
+  console.log('EventDetails - Event properties:', event ? Object.keys(event) : 'No event found');
+  console.log('EventDetails - User object:', user);
+  console.log('EventDetails - User properties:', user ? Object.keys(user) : 'No user found');
+  console.log('EventDetails - User name:', user?.name);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  if (!event) {
-    return <div className="p-8 text-center text-gray-500">Event not found.</div>;
+  // Show loading state while events are being fetched
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-teal-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading event details...</p>
+        </div>
+      </div>
+    );
   }
 
-  const isParticipant = user && event.participants.some(p => p.id === user.id);
-  const canJoin = user && user.role === 'participant' && !isParticipant && event.participants.length < event.maxParticipants;
+  if (!event) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-teal-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Event not found</h2>
+          <p className="text-gray-600 mb-6">The event you're looking for doesn't exist or has been removed.</p>
+          <button 
+            onClick={() => navigate('/events')} 
+            className="px-6 py-3 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors"
+          >
+            Back to Events
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const isParticipant = false; // We'll need to check this from the backend
+  const canJoin = user && user.role === 'participant' && !isParticipant && (event.currentParticipants || 0) < (event.maxParticipants || 0);
   const canLeave = user && user.role === 'participant' && isParticipant;
 
   const qrData = user && event ? JSON.stringify({
-    userId: user.id,
-    userName: user.name,
+    userId: user?.id,
+    userName: user?.name || 'Unknown User',
     eventId: event.id,
-    eventTitle: event.title,
-    eventDate: event.date
+    eventTitle: event.title || 'Untitled Event',
+    eventDate: Array.isArray(event.dateTime) ? 
+      new Date(event.dateTime[0], event.dateTime[1] - 1, event.dateTime[2], event.dateTime[3], event.dateTime[4] || 0).toISOString() :
+      event.dateTime
   }) : '';
 
-  // Find previous events by the same organizer (excluding this event, and only completed/past events)
+  // Find previous events by the same NGO (excluding this event, and only completed/past events)
   const previousEvents = events.filter(e =>
-    e.organizer.id === event.organizer.id &&
+    e.ngoId === event.ngoId &&
     e.id !== event.id &&
-    e.status === 'completed'
+    e.status === 'COMPLETED'
   );
 
   // Gather feedbacks for previous events
@@ -49,23 +88,27 @@ const EventDetails = () => {
   // Calculate average rating
   const avgRating = allFeedbacks.length > 0 ? (allFeedbacks.reduce((sum, fb) => sum + fb.rating, 0) / allFeedbacks.length).toFixed(1) : null;
 
-  // Feedback filter state
-  const [feedbackFilter, setFeedbackFilter] = useState('all'); // all, good, bad
+  // Feedback filter state (moved to top level)
   const filteredFeedbacks = allFeedbacks.filter(fb => {
     if (feedbackFilter === 'good') return fb.rating >= 4;
     if (feedbackFilter === 'bad') return fb.rating <= 2;
     return true;
   });
 
-  // About Organizer info
-  const organizer = event.organizer;
+  // About Organizer info  
+  const organizer = { 
+    name: `NGO ${event.ngoId || 'Unknown'}`, 
+    id: event.ngoId || 'unknown',
+    avatar: 'https://images.pexels.com/photos/7456339/pexels-photo-7456339.jpeg?auto=compress&cs=tinysrgb&w=400',
+    bio: 'Community organization dedicated to environmental conservation'
+  };
 
   // Feedbacks for this event
   const eventFeedbacks = mockFeedbacks.filter(fb => fb.eventId === event.id);
 
   // Participants avatars (limit to 6, show count if more)
-  const participantAvatars = event.participants.slice(0, 6);
-  const extraParticipants = event.participants.length - participantAvatars.length;
+  const participantAvatars = []; // We'll need to get this from the backend
+  const extraParticipants = (event.currentParticipants || 0) - participantAvatars.length;
 
   // Share event handler
   const handleShare = () => {
@@ -83,12 +126,30 @@ const EventDetails = () => {
         <div className="relative z-20 w-full max-w-4xl mx-auto px-6 pb-6 flex flex-col md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow mb-2 flex items-center gap-2">
-              <CalendarIcon className="w-7 h-7 text-white/80" /> {event.title}
+              <CalendarIcon className="w-7 h-7 text-white/80" /> {event.title || 'Untitled Event'}
             </h1>
             <div className="flex items-center gap-4 text-white/90 text-lg font-medium">
-              <span className="flex items-center gap-1"><Clock className="w-5 h-5" />{event.time}</span>
-              <span className="flex items-center gap-1"><MapPin className="w-5 h-5" />{event.location}</span>
-              <span className="flex items-center gap-1"><CalendarIcon className="w-5 h-5" />{event.date}</span>
+              <span className="flex items-center gap-1"><Clock className="w-5 h-5" />{(() => {
+                if (!event.dateTime) return 'Time not set';
+                let date;
+                if (Array.isArray(event.dateTime)) {
+                  date = new Date(event.dateTime[0], event.dateTime[1] - 1, event.dateTime[2], event.dateTime[3], event.dateTime[4] || 0);
+                } else {
+                  date = new Date(event.dateTime);
+                }
+                return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              })()}</span>
+              <span className="flex items-center gap-1"><MapPin className="w-5 h-5" />{event.location || 'Location not set'}</span>
+              <span className="flex items-center gap-1"><CalendarIcon className="w-5 h-5" />{(() => {
+                if (!event.dateTime) return 'Date not set';
+                let date;
+                if (Array.isArray(event.dateTime)) {
+                  date = new Date(event.dateTime[0], event.dateTime[1] - 1, event.dateTime[2], event.dateTime[3], event.dateTime[4] || 0);
+                } else {
+                  date = new Date(event.dateTime);
+                }
+                return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+              })()}</span>
             </div>
           </div>
           <button onClick={handleShare} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full shadow hover:from-sky-600 hover:to-teal-600 transition-all font-semibold mt-4 md:mt-0">
@@ -111,7 +172,7 @@ const EventDetails = () => {
                 <span className="font-semibold text-gray-700">Participants:</span>
                 <div className="flex -space-x-2">
                   {participantAvatars.map((p, i) => (
-                    <img key={i} src={p.avatar} alt={p.name} className="w-8 h-8 rounded-full border-2 border-white shadow" />
+                    <img key={i} src={p.avatar} alt={p.name || 'Participant'} className="w-8 h-8 rounded-full border-2 border-white shadow" />
                   ))}
                   {extraParticipants > 0 && (
                     <span className="w-8 h-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold border-2 border-white">+{extraParticipants}</span>
@@ -121,7 +182,7 @@ const EventDetails = () => {
               <div className="flex gap-2">
                 {canJoin && (
                   <button
-                    onClick={() => joinEvent(event.id, user.id)}
+                    onClick={() => joinEvent(event.id, user?.id)}
                     className="px-5 py-2 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 transition-all font-semibold shadow"
                   >
                     Join Event
@@ -129,7 +190,7 @@ const EventDetails = () => {
                 )}
                 {canLeave && (
                   <button
-                    onClick={() => leaveEvent(event.id, user.id)}
+                    onClick={() => leaveEvent(event.id, user?.id)}
                     className="px-5 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors font-semibold shadow"
                   >
                     Leave Event
@@ -148,11 +209,29 @@ const EventDetails = () => {
             </div>
             <p className="text-gray-600 mb-4 text-lg">{event.description}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="flex items-center gap-2"><CalendarIcon className="w-4 h-4 text-sky-400" /><span className="block text-gray-500 text-xs">Date</span><span className="font-medium text-gray-800 ml-1">{event.date}</span></div>
-              <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-sky-400" /><span className="block text-gray-500 text-xs">Time</span><span className="font-medium text-gray-800 ml-1">{event.time}</span></div>
+              <div className="flex items-center gap-2"><CalendarIcon className="w-4 h-4 text-sky-400" /><span className="block text-gray-500 text-xs">Date</span><span className="font-medium text-gray-800 ml-1">{(() => {
+                if (!event.dateTime) return 'Date not set';
+                let date;
+                if (Array.isArray(event.dateTime)) {
+                  date = new Date(event.dateTime[0], event.dateTime[1] - 1, event.dateTime[2], event.dateTime[3], event.dateTime[4] || 0);
+                } else {
+                  date = new Date(event.dateTime);
+                }
+                return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+              })()}</span></div>
+              <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-sky-400" /><span className="block text-gray-500 text-xs">Time</span><span className="font-medium text-gray-800 ml-1">{(() => {
+                if (!event.dateTime) return 'Time not set';
+                let date;
+                if (Array.isArray(event.dateTime)) {
+                  date = new Date(event.dateTime[0], event.dateTime[1] - 1, event.dateTime[2], event.dateTime[3], event.dateTime[4] || 0);
+                } else {
+                  date = new Date(event.dateTime);
+                }
+                return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              })()}</span></div>
               <div className="flex items-center gap-2"><MapPin className="w-4 h-4 text-sky-400" /><span className="block text-gray-500 text-xs">Location</span><span className="font-medium text-gray-800 ml-1">{event.location}</span></div>
-              <div className="flex items-center gap-2"><Users className="w-4 h-4 text-sky-400" /><span className="block text-gray-500 text-xs">Organizer</span><span className="font-medium text-gray-800 ml-1">{event.organizer.name}</span></div>
-              <div className="flex items-center gap-2"><Users className="w-4 h-4 text-sky-400" /><span className="block text-gray-500 text-xs">Participants</span><span className="font-medium text-gray-800 ml-1">{event.participants.length} / {event.maxParticipants}</span></div>
+              <div className="flex items-center gap-2"><Users className="w-4 h-4 text-sky-400" /><span className="block text-gray-500 text-xs">Organizer</span><span className="font-medium text-gray-800 ml-1">{organizer.name}</span></div>
+              <div className="flex items-center gap-2"><Users className="w-4 h-4 text-sky-400" /><span className="block text-gray-500 text-xs">Participants</span><span className="font-medium text-gray-800 ml-1">{event.currentParticipants || 0} / {event.maxParticipants || 0}</span></div>
               {event.estimatedWaste && (
                 <div className="flex items-center gap-2"><Trash2 className="w-4 h-4 text-sky-400" /><span className="block text-gray-500 text-xs">Expected Waste</span><span className="font-medium text-gray-800 ml-1">{event.estimatedWaste} kg</span></div>
               )}
@@ -273,7 +352,7 @@ const EventDetails = () => {
                 >
                   <div className="flex items-center gap-2 mb-2">
                     {participant && (
-                      <img src={participant.avatar} alt={participant.name} className="w-8 h-8 rounded-full border-2 border-sky-100 shadow" />
+                      <img src={participant.avatar} alt={participant.name || 'Participant'} className="w-8 h-8 rounded-full border-2 border-sky-100 shadow" />
                     )}
                     <div className="flex items-center gap-1">
                       {[...Array(fb.rating)].map((_, idx) => (

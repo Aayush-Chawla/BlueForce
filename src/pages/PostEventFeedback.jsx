@@ -12,7 +12,7 @@ const PostEventFeedback = () => {
   const event = events.find(e => e.id === eventId);
 
   // Check if user is eligible (participant, completed event)
-  const isEligible = user && user.role === 'participant' && event && event.status === 'completed' && event.participants.some(p => p.id === user.id);
+  const isEligible = user && user.role === 'participant' && event && event.status === 'COMPLETED';
 
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState('');

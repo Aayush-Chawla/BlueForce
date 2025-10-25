@@ -4,6 +4,7 @@ import { AuthProvider, EventProvider } from './contexts';
 import { useAuth } from './contexts';
 import Header from './components/layout/Header';
 import ChatHelpButton from './components/common/ChatHelpButton';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import Home from './pages/Home';
 import Events from './pages/Events';
 import Login from './pages/Login';
@@ -24,6 +25,7 @@ import AdminUserManagement from './pages/admin/AdminUserManagement';
 import AdminEventOverview from './pages/admin/AdminEventOverview';
 import AdminFeedbackViewer from './pages/admin/AdminFeedbackViewer';
 import AdminEcoTipsManager from './pages/admin/AdminEcoTipsManager';
+import TestIntegration from './pages/TestIntegration';
 
 // Protected Route component for authenticated users
 const ProtectedRoute = ({ children }) => {
@@ -131,6 +133,7 @@ const AppContent = () => {
             </ProtectedRoute>
           } />
           <Route path="/chat-help-center" element={<ChatHelpCenter />} />
+          <Route path="/test-integration" element={<TestIntegration />} />
           
           {/* Protected routes - require authentication */}
           <Route path="/dashboard" element={<DashboardRoute />} />
@@ -179,13 +182,15 @@ const AppContent = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <EventProvider>
-        <Router>
-          <AppContent />
-        </Router>
-      </EventProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <EventProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </EventProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

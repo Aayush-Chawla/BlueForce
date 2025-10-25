@@ -28,13 +28,15 @@ const NGOCertificates = () => {
   const eventParticipants = {};
   if (events) {
     events.forEach(event => {
-      if (event.organizer && event.organizer.id === user.id && event.participants) {
-        event.participants.forEach(participant => {
-          if (!eventParticipants[participant.id]) {
-            eventParticipants[participant.id] = [];
+      if (event.ngoId === user?.id && event.currentParticipants > 0) {
+        // Since we don't have participant data from backend yet, create mock participants
+        for (let i = 0; i < event.currentParticipants; i++) {
+          const participantId = `participant_${event.id}_${i}`;
+          if (!eventParticipants[participantId]) {
+            eventParticipants[participantId] = [];
           }
-          eventParticipants[participant.id].push(event);
-        });
+          eventParticipants[participantId].push(event);
+        }
       }
     });
   }

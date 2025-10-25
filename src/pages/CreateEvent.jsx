@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, useEvents } from '../contexts';
-import { EventForm } from '../features/ngo/components';
+import EventForm from '../components/forms/EventForm';
+import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 const CreateEvent = () => {
   const { user } = useAuth();
-  const { addEvent } = useEvents();
+  const { addEvent, loading, error } = useEvents();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   if (!user || user.role !== 'ngo') {
     return (
@@ -21,31 +23,24 @@ const CreateEvent = () => {
   }
 
   const handleSubmit = async (eventData) => {
-    setIsLoading(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Add the event with organizer information
-      addEvent({
-        ...eventData,
-        organizer: user,
-        participants: [],
-        status: 'upcoming'
-      });
-      // Show success message
-      alert('Event created successfully!');
-      // Navigate to events page to see the created event
-      navigate('/events');
+      await addEvent(eventData);
+      setSuccessMessage('Event created successfully!');
+      // Navigate to events page after a short delay
+      setTimeout(() => {
+        navigate('/events');
+      }, 2000);
     } catch (error) {
       console.error('Error creating event:', error);
-      alert('Failed to create event. Please try again.');
-    } finally {
-      setIsLoading(false);
+      setErrorMessage(error.message || 'Failed to create event. Please try again.');
     }
   };
 
   const handleCancel = () => {
-    navigate('/dashboard');
+    navigate('/events');
   };
 
   return (
@@ -58,10 +53,35 @@ const CreateEvent = () => {
               Organize a new beach cleaning event and inspire others to join your cause
             </p>
           </div>
+
+          {/* Success Message */}
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center">
+              <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
+              <p className="text-green-700">{successMessage}</p>
+            </div>
+          )}
+
+          {/* Error Messages */}
+          {(errorMessage || error) && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
+              <XCircle className="w-5 h-5 text-red-500 mr-3" />
+              <p className="text-red-700">{errorMessage || error}</p>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center">
+              <AlertCircle className="w-5 h-5 text-blue-500 mr-3 animate-spin" />
+              <p className="text-blue-700">Creating event...</p>
+            </div>
+          )}
+
           <EventForm
             onSubmit={handleSubmit}
             onCancel={handleCancel}
-            isLoading={isLoading}
+            isLoading={loading}
           />
         </div>
       </div>
