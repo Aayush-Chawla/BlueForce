@@ -33,34 +33,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // Try real auth service first
       const data = await authService.login(email, password);
-      
-      // Create user object from token data if not provided
-      if (data.token && !data.user) {
-        // Decode JWT token to get user info
-        try {
-          const tokenPayload = JSON.parse(atob(data.token.split('.')[1]));
-          const user = {
-            id: tokenPayload.user_id || tokenPayload.id,
-            email: tokenPayload.sub || email,
-            role: tokenPayload.role,
-            name: email.split('@')[0], // Use email prefix as name
-            bio: '',
-            location: '',
-            eventsJoined: 0,
-            eventsOrganized: 0,
-            totalWasteCollected: 0,
-            ecoScore: 0
-          };
-          setUser(user);
-          localStorage.setItem('beachCleanupUser', JSON.stringify(user));
-        } catch (e) {
-          console.error('Error decoding token:', e);
-          throw new Error('Invalid token received');
-        }
-      } else if (data.user) {
-        setUser(data.user);
-      }
-      
+      setUser(data.user);
       setIsLoading(false);
       return data;
     } catch (error) {
@@ -99,34 +72,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // Try real auth service first
       const data = await authService.register(userData);
-      
-      // Create user object from token data if not provided
-      if (data.token && !data.user) {
-        // Decode JWT token to get user info
-        try {
-          const tokenPayload = JSON.parse(atob(data.token.split('.')[1]));
-          const user = {
-            id: tokenPayload.user_id || tokenPayload.id,
-            email: tokenPayload.sub || userData.email,
-            role: tokenPayload.role,
-            name: userData.name || userData.email.split('@')[0],
-            bio: userData.bio || '',
-            location: userData.location || '',
-            eventsJoined: 0,
-            eventsOrganized: 0,
-            totalWasteCollected: 0,
-            ecoScore: 0
-          };
-          setUser(user);
-          localStorage.setItem('beachCleanupUser', JSON.stringify(user));
-        } catch (e) {
-          console.error('Error decoding token:', e);
-          throw new Error('Invalid token received');
-        }
-      } else if (data.user) {
-        setUser(data.user);
-      }
-      
+      setUser(data.user);
       setIsLoading(false);
       return data;
     } catch (error) {
