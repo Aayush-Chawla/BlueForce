@@ -13,6 +13,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/events")
@@ -24,9 +26,9 @@ public class EventParticipantController {
     private final JwtTokenExtractor jwtTokenExtractor;
     
     @PostMapping("/{eventId}/enroll")
-    public ResponseEntity<EventParticipantResponse> enrollInEvent(@PathVariable Long eventId,
-                                                                @Valid @RequestBody EnrollRequest request,
-                                                                Authentication authentication) {
+    public ResponseEntity<?> enrollInEvent(@PathVariable Long eventId,
+                                          @Valid @RequestBody EnrollRequest request,
+                                          Authentication authentication) {
         log.info("=== ENROLLMENT REQUEST DEBUG ===");
         log.info("Event ID: {}", eventId);
         log.info("Request userId: {}", request.getUserId());
@@ -47,12 +49,16 @@ public class EventParticipantController {
             return ResponseEntity.status(HttpStatus.CREATED).body(enrollment);
         } catch (RuntimeException e) {
             log.error("Enrollment failed: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body(null);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            errorResponse.put("eventId", eventId);
+            errorResponse.put("userId", request.getUserId());
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
     
     @DeleteMapping("/{eventId}/enroll")
-    public ResponseEntity<Void> cancelEnrollment(@PathVariable Long eventId, Authentication authentication) {
+    public ResponseEntity<Map<String, Object>> cancelEnrollment(@PathVariable Long eventId, Authentication authentication) {
         log.info("User {} cancelling enrollment in event {}", authentication.getName(), eventId);
         
         Long userId = jwtTokenExtractor.extractUserId(authentication);
@@ -61,7 +67,12 @@ public class EventParticipantController {
             eventParticipantService.cancelEnrollment(eventId, userId);
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            log.error("Cancel enrollment failed: {}", e.getMessage(), e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            errorResponse.put("eventId", eventId);
+            errorResponse.put("userId", userId);
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
     

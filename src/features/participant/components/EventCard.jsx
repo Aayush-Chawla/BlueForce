@@ -1,19 +1,53 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Users, Trash2, User } from 'lucide-react';
 import { useAuth } from '../../../contexts';
 import { useNavigate } from 'react-router-dom';
 
 const EventCard = ({ event, onJoin, onLeave, className = '' }) => {
   const { user } = useAuth();
+  const [isParticipant, setIsParticipant] = useState(false);
+  const [checkingEnrollment, setCheckingEnrollment] = useState(true);
   
   // Debug logging
   console.log('EventCard - User:', user);
   console.log('EventCard - User name:', user?.name);
   console.log('EventCard - Event:', event);
   
-  const isParticipant = false; // We'll need to check this from the backend
-  const canJoin = user && user.role === 'participant' && !isParticipant && (event.currentParticipants || 0) < (event.maxParticipants || 0);
-  const canLeave = user && user.role === 'participant' && isParticipant;
+  // Check if user is already enrolled in this event
+  useEffect(() => {
+    const checkEnrollment = async () => {
+      if (user && user.role === 'participant') {
+        try {
+          console.log(`Checking enrollment for user ${user.id} in event ${event.id}`);
+          const response = await fetch(`http://localhost:8083/api/events/${event.id}/enrolled/${user.id}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            }
+          });
+          
+          console.log(`Enrollment check response status: ${response.status}`);
+          
+          if (response.ok) {
+            const enrolled = await response.json();
+            setIsParticipant(enrolled);
+            console.log(`User ${user.id} enrollment status for event ${event.id}:`, enrolled);
+          } else {
+            console.log(`Enrollment check failed with status: ${response.status}`);
+            setIsParticipant(false);
+          }
+        } catch (error) {
+          console.error('Error checking enrollment status:', error);
+          setIsParticipant(false);
+        }
+      }
+      setCheckingEnrollment(false);
+    };
+    
+    checkEnrollment();
+  }, [user, event.id]);
+  
+  const canJoin = user && user.role === 'participant' && !isParticipant && !checkingEnrollment && (event.currentParticipants || 0) < (event.maxParticipants || 0);
+  const canLeave = user && user.role === 'participant' && isParticipant && !checkingEnrollment;
   const navigate = useNavigate();
 
   const formatDate = (dateTime) => {
@@ -140,6 +174,11 @@ const EventCard = ({ event, onJoin, onLeave, className = '' }) => {
           </div>
           
           <div className="flex space-x-2">
+            {checkingEnrollment && (
+              <div className="px-4 py-2 bg-gray-100 text-gray-500 rounded-full text-sm font-medium">
+                Checking...
+              </div>
+            )}
             {canJoin && onJoin && (
               <button
                 onClick={e => { e.stopPropagation(); onJoin(event.id); }}
@@ -155,6 +194,11 @@ const EventCard = ({ event, onJoin, onLeave, className = '' }) => {
               >
                 Leave Event
               </button>
+            )}
+            {isParticipant && !canLeave && (
+              <div className="px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                Already Joined
+              </div>
             )}
           </div>
         </div>

@@ -128,9 +128,9 @@ class EventService {
   }
 
   // Cancel enrollment
-  async cancelEnrollment(eventId, participantId) {
+  async cancelEnrollment(eventId) {
     try {
-      const response = await fetch(`${this.baseURL}/events/${eventId}/participants/${participantId}`, {
+      const response = await fetch(`${this.baseURL}/events/${eventId}/enroll`, {
         method: 'DELETE',
         headers: this.getAuthHeaders()
       });
@@ -152,6 +152,20 @@ class EventService {
       return await this.handleResponse(response);
     } catch (error) {
       console.error('Error updating participant status:', error);
+      throw error;
+    }
+  }
+
+  // Check if user is enrolled in event
+  async isUserEnrolled(eventId, userId) {
+    try {
+      const response = await fetch(`${this.baseURL}/events/${eventId}/enrolled/${userId}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error checking enrollment status:', error);
       throw error;
     }
   }

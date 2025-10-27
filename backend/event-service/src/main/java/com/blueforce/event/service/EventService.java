@@ -53,6 +53,15 @@ public class EventService {
     }
     
     @Transactional(readOnly = true)
+    public List<EventResponse> getAllActiveEvents() {
+        log.info("Fetching all active events");
+        List<Event> events = eventRepository.findByStatusOrderByDateTimeDesc(Event.EventStatus.ACTIVE);
+        return events.stream()
+                .map(EventResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+    
+    @Transactional(readOnly = true)
     public Optional<EventResponse> getEventById(Long eventId) {
         log.info("Fetching event by ID: {}", eventId);
         return eventRepository.findById(eventId)

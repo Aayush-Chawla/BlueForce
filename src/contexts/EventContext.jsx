@@ -109,8 +109,12 @@ export const EventProvider = ({ children }) => {
       console.log('Auth token:', localStorage.getItem('authToken'));
       console.log('User from context:', user);
       
+      // Ensure userId is properly converted to number
+      const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+      console.log('Converted userId:', numericUserId);
+      
       const enrollmentData = {
-        userId: parseInt(userId), // Convert to number as backend expects Long
+        userId: numericUserId, // Convert to number as backend expects Long
         message: 'Joining the event' // Optional message
       };
       
@@ -125,7 +129,24 @@ export const EventProvider = ({ children }) => {
     } catch (err) {
       console.error('Error joining event:', err);
       console.error('Error details:', err.message, err.status, err.response);
-      setError(err.message);
+      
+      // Handle specific error cases
+      if (err.status === 400 && err.response && err.response.error) {
+        if (err.response.error.includes('already enrolled')) {
+          setError('You are already enrolled in this event');
+        } else if (err.response.error.includes('Event is full')) {
+          setError('This event is full and cannot accept more participants');
+        } else if (err.response.error.includes('inactive event')) {
+          setError('This event is no longer accepting participants');
+        } else if (err.response.error.includes('past event')) {
+          setError('Cannot join events that have already occurred');
+        } else {
+          setError(err.response.error);
+        }
+      } else {
+        setError(err.message);
+      }
+      
       throw err;
     } finally {
       setLoading(false);
@@ -136,18 +157,40 @@ export const EventProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      // First get participants to find the participant ID
-      const participants = await eventService.getEventParticipants(eventId);
-      const participant = participants.find(p => p.userId === userId);
+      console.log('Leaving event:', eventId, 'for user:', userId);
       
-      if (participant) {
-        await eventService.cancelEnrollment(eventId, participant.id);
-        // Refresh the events to get updated participant count
-        await loadEvents();
+      // First check if user is actually enrolled
+      const isEnrolled = await eventService.isUserEnrolled(eventId, userId);
+      console.log('User enrollment status before leaving:', isEnrolled);
+      
+      if (!isEnrolled) {
+        throw new Error('You are not currently enrolled in this event');
       }
+      
+      // Use the simplified cancelEnrollment method that extracts user ID from JWT
+      await eventService.cancelEnrollment(eventId);
+      
+      // Refresh the events to get updated participant count
+      await loadEvents();
+      
+      console.log('Successfully left event');
     } catch (err) {
       console.error('Error leaving event:', err);
-      setError(err.message);
+      console.error('Error details:', err.message, err.status, err.response);
+      
+      // Handle specific error cases
+      if (err.status === 400 && err.response && err.response.error) {
+        if (err.response.error.includes('not currently enrolled')) {
+          setError('You are not currently enrolled in this event');
+        } else if (err.response.error.includes('Enrollment not found')) {
+          setError('No enrollment found for this event');
+        } else {
+          setError(err.response.error);
+        }
+      } else {
+        setError(err.message);
+      }
+      
       throw err;
     } finally {
       setLoading(false);

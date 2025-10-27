@@ -26,6 +26,9 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     @Query("SELECT e FROM Event e WHERE e.dateTime BETWEEN :startDate AND :endDate AND e.status = 'ACTIVE' ORDER BY e.dateTime ASC")
     List<Event> findEventsByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
     
+    // Find all active events
+    List<Event> findByStatusOrderByDateTimeDesc(Event.EventStatus status);
+    
     // Count events by NGO
     long countByNgoIdAndStatus(Long ngoId, Event.EventStatus status);
 }
