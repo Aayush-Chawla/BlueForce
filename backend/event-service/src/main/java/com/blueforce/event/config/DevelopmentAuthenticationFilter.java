@@ -75,13 +75,20 @@ public class DevelopmentAuthenticationFilter extends OncePerRequestFilter {
     private Authentication createMockAuthentication(String token) {
         try {
             String decoded = new String(Base64.getDecoder().decode(token));
+            logger.info("Decoded token: " + decoded);
             
-            // Extract user ID
-            String userId = "1"; // default
+            // Extract user ID - try both "user_id" and "sub" fields
+            String userId = "2"; // default to participant user
             if (decoded.contains("user_id")) {
                 String userIdStr = decoded.substring(decoded.indexOf("user_id") + 9);
                 userIdStr = userIdStr.substring(0, userIdStr.indexOf("\""));
                 userId = userIdStr;
+                logger.info("Extracted user_id: " + userId);
+            } else if (decoded.contains("\"sub\"")) {
+                String userIdStr = decoded.substring(decoded.indexOf("\"sub\"") + 6);
+                userIdStr = userIdStr.substring(0, userIdStr.indexOf("\""));
+                userId = userIdStr;
+                logger.info("Extracted sub: " + userId);
             }
             
             // Extract role
@@ -90,16 +97,21 @@ public class DevelopmentAuthenticationFilter extends OncePerRequestFilter {
                 String roleStr = decoded.substring(decoded.indexOf("role") + 7);
                 roleStr = roleStr.substring(0, roleStr.indexOf("\""));
                 role = roleStr;
+                logger.info("Extracted role: " + role);
             }
             
             // Create authentication object
-            return new UsernamePasswordAuthenticationToken(
+            Authentication auth = new UsernamePasswordAuthenticationToken(
                 userId, 
                 null, 
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
             );
             
+            logger.info("Created authentication for user: " + userId + " with role: " + role);
+            return auth;
+            
         } catch (Exception e) {
+            logger.error("Failed to parse mock token: " + e.getMessage(), e);
             throw new RuntimeException("Failed to parse mock token", e);
         }
     }

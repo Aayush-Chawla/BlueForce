@@ -49,28 +49,46 @@ public class JwtTokenExtractor {
         // Development mode: handle mock tokens
         if (developmentMode && authentication != null) {
             try {
-                return Long.parseLong(authentication.getName());
-            } catch (NumberFormatException e) {
-                // Try to parse mock token if it's base64 encoded
-                String token = authentication.getName();
-                if (token != null && token.length() > 10) {
+                // First try to parse the authentication name directly as a number
+                String authName = authentication.getName();
+                if (authName != null && authName.matches("\\d+")) {
+                    return Long.parseLong(authName);
+                }
+                
+                // If that fails, try to parse mock token if it's base64 encoded
+                if (authName != null && authName.length() > 10) {
                     try {
-                        String decoded = new String(Base64.getDecoder().decode(token));
+                        String decoded = new String(Base64.getDecoder().decode(authName));
+                        System.out.println("Decoded token: " + decoded);
+                        
                         // Parse JSON-like structure: {"sub":"123","user_id":"123",...}
                         if (decoded.contains("user_id")) {
                             String userIdStr = decoded.substring(decoded.indexOf("user_id") + 9);
                             userIdStr = userIdStr.substring(0, userIdStr.indexOf("\""));
+                            System.out.println("Extracted user_id: " + userIdStr);
+                            return Long.parseLong(userIdStr);
+                        }
+                        
+                        // Also try "sub" field
+                        if (decoded.contains("\"sub\"")) {
+                            String userIdStr = decoded.substring(decoded.indexOf("\"sub\"") + 6);
+                            userIdStr = userIdStr.substring(0, userIdStr.indexOf("\""));
+                            System.out.println("Extracted sub: " + userIdStr);
                             return Long.parseLong(userIdStr);
                         }
                     } catch (Exception ex) {
+                        System.out.println("Failed to parse mock token: " + ex.getMessage());
                         // Ignore parsing errors
                     }
                 }
+            } catch (NumberFormatException e) {
+                System.out.println("Failed to parse authentication name as number: " + e.getMessage());
             }
         }
         
-        // If all else fails, return a default NGO ID for testing
-        return 1L;
+        // If all else fails, return a default user ID for testing
+        System.out.println("Using default user ID: 2");
+        return 2L; // Changed from 1L to 2L to match a participant user
     }
     
     public String extractUserRole(Authentication authentication) {

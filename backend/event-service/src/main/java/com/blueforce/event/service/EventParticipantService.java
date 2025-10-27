@@ -29,17 +29,24 @@ public class EventParticipantService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     
     public EventParticipantResponse enrollInEvent(Long eventId, EnrollRequest request) {
+        log.info("=== ENROLLMENT SERVICE DEBUG ===");
         log.info("User {} enrolling in event {}", request.getUserId(), eventId);
+        log.info("Request details: userId={}, message={}", request.getUserId(), request.getMessage());
         
         // Check if event exists and is active
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new RuntimeException("Event not found with ID: " + eventId));
         
+        log.info("Event found: id={}, title={}, status={}, maxParticipants={}, currentParticipants={}", 
+                event.getId(), event.getTitle(), event.getStatus(), event.getMaxParticipants(), event.getCurrentParticipants());
+        
         if (event.getStatus() != Event.EventStatus.ACTIVE) {
+            log.error("Event is not active. Status: {}", event.getStatus());
             throw new RuntimeException("Cannot enroll in inactive event");
         }
         
         if (event.getDateTime().isBefore(LocalDateTime.now())) {
+            log.error("Event is in the past. DateTime: {}", event.getDateTime());
             throw new RuntimeException("Cannot enroll in past event");
         }
         
@@ -47,8 +54,11 @@ public class EventParticipantService {
         Optional<EventParticipant> existingEnrollment = eventParticipantRepository
                 .findByEventIdAndUserId(eventId, request.getUserId());
         
+        log.info("Existing enrollment check: {}", existingEnrollment.isPresent());
+        
         if (existingEnrollment.isPresent()) {
             EventParticipant participant = existingEnrollment.get();
+            log.info("Existing participant status: {}", participant.getStatus());
             if (participant.getStatus() == EventParticipant.ParticipationStatus.ENROLLED) {
                 throw new RuntimeException("User is already enrolled in this event");
             } else if (participant.getStatus() == EventParticipant.ParticipationStatus.CANCELLED) {
@@ -71,6 +81,7 @@ public class EventParticipantService {
         // Check if event is full
         if (event.getMaxParticipants() != null && 
             event.getCurrentParticipants() >= event.getMaxParticipants()) {
+            log.error("Event is full. Current: {}, Max: {}", event.getCurrentParticipants(), event.getMaxParticipants());
             throw new RuntimeException("Event is full");
         }
         
@@ -80,6 +91,8 @@ public class EventParticipantService {
         participant.setUserId(request.getUserId());
         participant.setStatus(EventParticipant.ParticipationStatus.ENROLLED);
         participant.setEnrolledAt(LocalDateTime.now());
+        
+        log.info("Creating new enrollment: eventId={}, userId={}", eventId, request.getUserId());
         
         EventParticipant savedParticipant = eventParticipantRepository.save(participant);
         

@@ -57,7 +57,7 @@ public class EventController {
             LocalDateTime end = LocalDateTime.parse(endDate);
             events = eventService.getEventsByDateRange(start, end);
         } else {
-            events = eventService.getAllUpcomingEvents();
+            events = eventService.getAllActiveEvents();
         }
         
         return ResponseEntity.ok(events);

@@ -95,14 +95,45 @@ const Events = () => {
     }
   };
 
-  const upcomingEvents = filteredEvents.filter(event => event.isUpcoming);
-  const pastEvents = filteredEvents.filter(event => event.status === 'COMPLETED');
+  // Helper function to determine if event is upcoming
+  const isEventUpcoming = (event) => {
+    // Use backend isUpcoming if available, otherwise calculate it
+    if (event.isUpcoming !== undefined) {
+      return event.isUpcoming;
+    }
+    
+    // Fallback: calculate based on dateTime
+    const eventDate = new Date(event.dateTime);
+    const now = new Date();
+    return eventDate > now;
+  };
+
+  const upcomingEvents = filteredEvents.filter(event => isEventUpcoming(event));
+  const pastEvents = filteredEvents.filter(event => event.status === 'COMPLETED' || !isEventUpcoming(event));
   
   // Debug logging
   console.log('Events loaded:', events);
   console.log('Filtered events:', filteredEvents);
   console.log('Upcoming events:', upcomingEvents);
   console.log('Past events:', pastEvents);
+  
+  // Detailed event analysis
+  if (events.length > 0) {
+    console.log('=== DETAILED EVENT ANALYSIS ===');
+    events.forEach((event, index) => {
+      console.log(`Event ${index}:`, {
+        id: event.id,
+        title: event.title,
+        dateTime: event.dateTime,
+        status: event.status,
+        isUpcoming: event.isUpcoming,
+        calculatedIsUpcoming: isEventUpcoming(event),
+        currentParticipants: event.currentParticipants,
+        maxParticipants: event.maxParticipants
+      });
+    });
+    console.log('=== END ANALYSIS ===');
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-teal-50">
