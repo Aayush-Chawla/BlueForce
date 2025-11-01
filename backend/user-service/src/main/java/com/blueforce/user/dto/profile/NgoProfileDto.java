@@ -15,4 +15,6 @@ public class NgoProfileDto {
     private String contactPerson;
     private String phone;
     private String address;
+    private String avatar;
+    private String bio;
 }

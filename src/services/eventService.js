@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8083/api';
+const API_BASE_URL = 'http://localhost:9090/api';
 
 class EventService {
   constructor() {
@@ -54,7 +54,7 @@ class EventService {
     }
   }
 
-  // Create new event
+  // Create new event with imageUrl
   async createEvent(eventData) {
     try {
       const response = await fetch(`${this.baseURL}/events`, {
@@ -69,7 +69,7 @@ class EventService {
     }
   }
 
-  // Update event
+  // Update event with imageUrl
   async updateEvent(eventId, eventData) {
     try {
       const response = await fetch(`${this.baseURL}/events/${eventId}`, {
@@ -113,6 +113,20 @@ class EventService {
     }
   }
 
+  // Leave/cancel participation
+  async leaveEvent(eventId) {
+    try {
+      const response = await fetch(`${this.baseURL}/events/${eventId}/enroll`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
+      });
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error leaving event:', error);
+      throw error;
+    }
+  }
+
   // Get event participants
   async getEventParticipants(eventId) {
     try {
@@ -120,9 +134,9 @@ class EventService {
         method: 'GET',
         headers: this.getAuthHeaders()
       });
-      return await this.handleResponse(response);
+      const json = await this.handleResponse(response);
+      return json.participants || [];
     } catch (error) {
-      console.error('Error fetching participants:', error);
       throw error;
     }
   }
@@ -141,42 +155,56 @@ class EventService {
     }
   }
 
-  // Update participant status (for NGO)
-  async updateParticipantStatus(eventId, participantId, statusData) {
+  // Update participant status
+  async updateParticipantStatus(eventId, participantId, status, reason='') {
     try {
       const response = await fetch(`${this.baseURL}/events/${eventId}/participants/${participantId}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: this.getAuthHeaders(),
-        body: JSON.stringify(statusData)
+        body: JSON.stringify({ status, reason })
       });
       return await this.handleResponse(response);
     } catch (error) {
-      console.error('Error updating participant status:', error);
       throw error;
     }
   }
 
-  // Check if user is enrolled in event
+  // Check user enrolled
   async isUserEnrolled(eventId, userId) {
     try {
       const response = await fetch(`${this.baseURL}/events/${eventId}/enrolled/${userId}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
       });
-      return await this.handleResponse(response);
+      if (!response.ok) return false;
+      const result = await response.json();
+      return !!result.enrolled || (result === true);
     } catch (error) {
-      console.error('Error checking enrollment status:', error);
-      throw error;
+      return false;
     }
   }
 
   // Health check
   async healthCheck() {
     try {
-      const response = await fetch(`http://localhost:8083/health`);
+      const response = await fetch(`${this.baseURL}/events/health`);
       return await this.handleResponse(response);
     } catch (error) {
       console.error('Error checking service health:', error);
+      throw error;
+    }
+  }
+
+  // Get event stats for admin/NGO dashboard
+  async getStatsOverview() {
+    try {
+      const response = await fetch(`${this.baseURL}/events/stats/overview`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+      const json = await this.handleResponse(response);
+      return json.stats || {};
+    } catch(error) {
       throw error;
     }
   }

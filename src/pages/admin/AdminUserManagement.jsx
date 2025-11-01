@@ -3,12 +3,27 @@ import { Shield, Users } from 'lucide-react';
 import { useAuth } from '../../contexts';
 import { mockUsers } from '../../utils/mockData';
 import { UserManagementTable } from '../../features/admin/components';
+import * as userService from '../../services/userService';
 
 const AdminUserManagement = () => {
   const { user } = useAuth();
-
-  // Check if user is super admin
   const isSuperAdmin = user && user.email === 'admin@blueforce.com';
+  const [users, setUsers] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState('');
+
+  React.useEffect(() => {
+    if (isSuperAdmin) {
+      setLoading(true); setError('');
+      userService.getAllUsers().then(res => {
+        setUsers(res.users || []);
+        setLoading(false);
+      }).catch(e => {
+        setError(e && e.message ? e.message : 'Failed to fetch users');
+        setLoading(false);
+      });
+    }
+  }, [isSuperAdmin]);
 
   if (!isSuperAdmin) {
     return (
@@ -21,16 +36,9 @@ const AdminUserManagement = () => {
       </div>
     );
   }
-
-  // Get all users (mock + registered)
-  const savedUsers = localStorage.getItem('beachCleanupRegisteredUsers');
-  const registeredUsers = savedUsers ? JSON.parse(savedUsers) : [];
-  const allUsers = [...mockUsers, ...registeredUsers];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-teal-50">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <div className="flex items-center space-x-4">
             <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full">
@@ -42,10 +50,10 @@ const AdminUserManagement = () => {
             </div>
           </div>
         </div>
-
-        {/* User Management Table */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <UserManagementTable users={allUsers} />
+          {loading && <div className="text-blue-600 py-8 text-center">Loading users...</div>}
+          {error && <div className="text-red-600 py-8 text-center">{error}</div>}
+          {!loading && !error && <UserManagementTable users={users} />}
         </div>
       </div>
     </div>

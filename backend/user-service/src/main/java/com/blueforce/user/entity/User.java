@@ -5,10 +5,13 @@ import lombok.*;
 
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString
+@EqualsAndHashCode
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,6 +27,8 @@ public class User {
     private String name;
     private String phone;
     private String address;
+    private String avatar;
+    private String bio;
     private boolean active = true;
 
     @Column(updatable = false)

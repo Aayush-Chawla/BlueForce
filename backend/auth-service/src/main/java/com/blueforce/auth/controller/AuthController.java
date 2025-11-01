@@ -13,17 +13,53 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private com.blueforce.auth.repository.AuthUserRepository authUserRepository;
+
+    @Autowired
+    private com.blueforce.auth.util.JwtUtil jwtUtil;
+
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<AuthResponse> register(@RequestBody @jakarta.validation.Valid RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-        LoginResponse response = authService.login(request);
-        if ("Invalid credentials".equals(response.getMessage())) {
-            return ResponseEntity.status(401).body(response);
+    public ResponseEntity<LoginResponse> login(@RequestBody @jakarta.validation.Valid LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
+    }
+
+    @GetMapping("/validate")
+    public ResponseEntity<?> validate(@RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).body(java.util.Map.of(
+                "success", false,
+                "message", "Missing or invalid Authorization header"
+            ));
         }
-        return ResponseEntity.ok(response);
+        String token = authorization.substring(7);
+        try {
+            String email = jwtUtil.extractEmail(token);
+            return authUserRepository.findByEmail(email)
+                .map(user -> ResponseEntity.ok(java.util.Map.of(
+                        "success", true,
+                        "message", "Token is valid",
+                        "data", java.util.Map.of(
+                                "userId", user.getId(),
+                                "email", user.getEmail(),
+                                "role", user.getRole(),
+                                "verified", user.isVerified()
+                        )
+                )))
+                .orElse(ResponseEntity.status(401).body(java.util.Map.of(
+                        "success", false,
+                        "message", "User not found"
+                )));
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(java.util.Map.of(
+                    "success", false,
+                    "message", "Invalid token"
+            ));
+        }
     }
 }

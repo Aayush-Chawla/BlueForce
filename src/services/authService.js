@@ -1,4 +1,4 @@
-const AUTH_API_BASE_URL = 'http://localhost:8081/api';
+const AUTH_API_BASE_URL = 'http://localhost:9090/api';
 
 class AuthService {
   constructor() {
@@ -33,18 +33,20 @@ class AuthService {
         },
         body: JSON.stringify({ email, password })
       });
-      
       const data = await this.handleResponse(response);
-      
       // Store token and user data
       if (data.token) {
         localStorage.setItem('authToken', data.token);
       }
-      if (data.user) {
-        localStorage.setItem('beachCleanupUser', JSON.stringify(data.user));
-      }
-      
-      return data;
+      // Compose user object from returned fields
+      const user = {
+        id: data.userId,
+        email: data.email,
+        role: data.role,
+        verified: data.verified
+      };
+      localStorage.setItem('beachCleanupUser', JSON.stringify(user));
+      return { user, token: data.token };
     } catch (error) {
       console.error('Error logging in:', error);
       throw error;
@@ -61,18 +63,16 @@ class AuthService {
         },
         body: JSON.stringify(userData)
       });
-      
       const data = await this.handleResponse(response);
-      
-      // Store token and user data
-      if (data.token) {
-        localStorage.setItem('authToken', data.token);
-      }
-      if (data.user) {
-        localStorage.setItem('beachCleanupUser', JSON.stringify(data.user));
-      }
-      
-      return data;
+      // For registration, AuthResponse returns userId, email, role, verified but not token
+      const user = {
+        id: data.userId,
+        email: data.email,
+        role: data.role,
+        verified: data.verified
+      };
+      localStorage.setItem('beachCleanupUser', JSON.stringify(user));
+      return { user };
     } catch (error) {
       console.error('Error registering:', error);
       throw error;

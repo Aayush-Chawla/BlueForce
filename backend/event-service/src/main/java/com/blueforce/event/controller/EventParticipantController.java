@@ -58,30 +58,36 @@ public class EventParticipantController {
     }
     
     @DeleteMapping("/{eventId}/enroll")
-    public ResponseEntity<Map<String, Object>> cancelEnrollment(@PathVariable Long eventId, Authentication authentication) {
-        log.info("User {} cancelling enrollment in event {}", authentication.getName(), eventId);
-        
-        Long userId = jwtTokenExtractor.extractUserId(authentication);
-        
+    public ResponseEntity<?> cancelEnrollment(@PathVariable Long eventId, Authentication authentication) {
         try {
+            Long userId = jwtTokenExtractor.extractUserId(authentication);
             eventParticipantService.cancelEnrollment(eventId, userId);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            log.error("Cancel enrollment failed: {}", e.getMessage(), e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            errorResponse.put("eventId", eventId);
-            errorResponse.put("userId", userId);
-            return ResponseEntity.badRequest().body(errorResponse);
+            return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Enrollment cancelled"));
+        } catch (Exception ex) {
+            return ResponseEntity.status(400).body(java.util.Map.of("success", false, "message", ex.getMessage()));
         }
     }
     
     @GetMapping("/{eventId}/participants")
-    public ResponseEntity<List<EventParticipantResponse>> getEventParticipants(@PathVariable Long eventId) {
-        log.info("Fetching participants for event: {}", eventId);
-        
-        List<EventParticipantResponse> participants = eventParticipantService.getEventParticipants(eventId);
-        return ResponseEntity.ok(participants);
+    public ResponseEntity<?> getParticipants(@PathVariable Long eventId) {
+        try {
+            var roster = eventParticipantService.getParticipantRoster(eventId);
+            return ResponseEntity.ok(java.util.Map.of("success", true, "participants", roster));
+        } catch (Exception ex) {
+            return ResponseEntity.status(400).body(java.util.Map.of("success", false, "message", ex.getMessage()));
+        }
+    }
+
+    @PatchMapping("/{eventId}/participants/{participantId}")
+    public ResponseEntity<?> updateParticipantStatus(@PathVariable Long eventId, @PathVariable Long participantId, @RequestBody java.util.Map<String, String> body) {
+        try {
+            String status = body.get("status");
+            String reason = body.getOrDefault("reason", "");
+            eventParticipantService.updateParticipantStatus(eventId, participantId, status, reason);
+            return ResponseEntity.ok(java.util.Map.of("success", true));
+        } catch (Exception ex) {
+            return ResponseEntity.status(400).body(java.util.Map.of("success", false, "message", ex.getMessage()));
+        }
     }
     
     @GetMapping("/user/{userId}")

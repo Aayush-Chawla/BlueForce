@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -176,6 +177,29 @@ public class EventParticipantService {
         return eventParticipantRepository.findByEventIdAndUserId(eventId, userId)
                 .map(participant -> participant.getStatus() == EventParticipant.ParticipationStatus.ENROLLED)
                 .orElse(false);
+    }
+
+    public java.util.List<java.util.Map<String, Object>> getParticipantRoster(Long eventId) {
+        var parts = eventParticipantRepository.findByEventIdOrderByEnrolledAtDesc(eventId);
+        return parts.stream().map(ep -> {
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("userId", ep.getUserId());
+            map.put("name", "Participant " + ep.getUserId()); // TODO: real name via UserService
+            map.put("avatar", "https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400");
+            map.put("status", ep.getStatus().name());
+            return map;
+        }).toList();
+    }
+
+    public void updateParticipantStatus(Long eventId, Long participantId, String status, String reason) {
+        var ep = eventParticipantRepository.findById(participantId)
+            .orElseThrow(() -> new IllegalArgumentException("Not found"));
+        if (!ep.getEventId().equals(eventId)) throw new IllegalStateException("Event mismatch");
+        var allowed = java.util.Set.of("APPROVED", "REJECTED", "COMPLETED", "CANCELLED");
+        if (!allowed.contains(status)) throw new IllegalArgumentException("Invalid status");
+        ep.setStatus(EventParticipant.ParticipationStatus.valueOf(status));
+        ep.setStatusReason(reason);
+        eventParticipantRepository.save(ep);
     }
     
     private void updateEventParticipantCount(Long eventId) {

@@ -40,10 +40,12 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
         }
 
+        String normalizedRole = normalizeRole(request.getRole());
+
         AuthUser authUser = AuthUser.builder()
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
+                .role(normalizedRole)
                 .provider(AuthProviderType.LOCAL)
                 .verified(false)
                 .build();
@@ -67,8 +69,21 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
         }
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
-        return new LoginResponse("Login successful", token);
+        String normalizedRole = normalizeRole(user.getRole());
+        if (!normalizedRole.equals(user.getRole())) {
+            user.setRole(normalizedRole);
+            authUserRepository.save(user);
+        }
+
+        String token = jwtUtil.generateToken(user.getEmail(), normalizedRole);
+        return LoginResponse.builder()
+            .message("Login successful")
+            .token(token)
+            .userId(user.getId())
+            .email(user.getEmail())
+            .role(normalizedRole)
+            .verified(user.isVerified())
+            .build();
     }
 
     private void publishUserRegisteredEvent(AuthUser authUser) {
@@ -94,5 +109,16 @@ public class AuthService {
         } catch (Exception e) {
             logger.error("Error publishing user registration event for user: {}", authUser.getEmail(), e);
         }
+    }
+
+    private String normalizeRole(String role) {
+        if (role == null) return "participant";
+        String r = role.trim().toLowerCase();
+        return switch (r) {
+            case "admin" -> "admin";
+            case "ngo", "organizer" -> "ngo";
+            case "participant", "volunteer" -> "participant";
+            default -> "participant";
+        };
     }
 }

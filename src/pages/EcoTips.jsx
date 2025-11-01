@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Filter, Award, HelpCircle, Brain, Leaf, ChevronDown, ChevronUp } from 'lucide-react';
-import { ecoTips, faqs, mcqQuestions } from '../utils/ecoTipsData';
+import ecoTipsService from '../services/ecoTipsService';
 import EcoTipCard from '../components/common/EcoTipCard';
 import { useAuth } from '../contexts';
 
@@ -14,8 +14,32 @@ const EcoTips = () => {
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [showResults, setShowResults] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
+  const [tips, setTips] = useState([]);
+  const [faqs, setFaqs] = useState([]);
+  const [mcqQuestions, setMcqQuestions] = useState([]);
 
-  const filteredTips = ecoTips.filter(tip => 
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const tipsResp = await ecoTipsService.listTips();
+        const faqsResp = await ecoTipsService.listFaqs();
+        const quizResp = await ecoTipsService.listQuiz();
+        if (!isMounted) return;
+        setTips(tipsResp.items || []);
+        setFaqs(faqsResp || []);
+        setMcqQuestions(quizResp || []);
+      } catch (e) {
+        // fall back to empty on failure
+        setTips([]);
+        setFaqs([]);
+        setMcqQuestions([]);
+      }
+    })();
+    return () => { isMounted = false; };
+  }, []);
+
+  const filteredTips = tips.filter(tip => 
     tip.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     tip.content.toLowerCase().includes(searchTerm.toLowerCase())
   ).filter(tip => 

@@ -37,4 +37,8 @@ public class CreateEventRequest {
     
     @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Contact phone must be valid")
     private String contactPhone;
+
+    private String imageUrl;
+
+    private Integer wasteCollected;
 }

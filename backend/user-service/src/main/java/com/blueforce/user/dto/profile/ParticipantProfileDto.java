@@ -15,4 +15,6 @@ public class ParticipantProfileDto {
     private String phone;
     private String address;
     private int points;       // e.g. leaderboard points (read-only, not editable)
+    private String avatar;
+    private String bio;
 }

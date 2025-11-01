@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Shield, Lightbulb, Plus, Edit, Trash2, Search, Filter, Save, X } from 'lucide-react';
 import { useAuth } from '../../contexts';
-import { ecoTips } from '../../utils/ecoTipsData';
+import ecoTipsService from '../../services/ecoTipsService';
 
 const AdminEcoTipsManager = () => {
   const { user } = useAuth();
-  const [tips, setTips] = useState(ecoTips);
+  const [tips, setTips] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [editingTip, setEditingTip] = useState(null);
@@ -32,6 +32,17 @@ const AdminEcoTipsManager = () => {
       </div>
     );
   }
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const resp = await ecoTipsService.listTips({ page: 0, limit: 100 });
+        setTips(resp.items || []);
+      } catch (e) {
+        setTips([]);
+      }
+    })();
+  }, []);
 
   const filteredTips = tips.filter(tip => 
     tip.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -71,30 +82,17 @@ const AdminEcoTipsManager = () => {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (isCreating) {
-      const newTip = {
-        id: (tips.length + 1).toString(),
-        ...formData,
-        icon: 'Lightbulb'
-      };
-      setTips([...tips, newTip]);
+      const created = await ecoTipsService.createTip(formData);
+      setTips([...tips, created]);
       setIsCreating(false);
-    } else {
-      setTips(tips.map(tip => 
-        tip.id === editingTip 
-          ? { ...tip, ...formData }
-          : tip
-      ));
+    } else if (editingTip) {
+      const updated = await ecoTipsService.updateTip(editingTip, formData);
+      setTips(tips.map(t => (t.id === editingTip ? updated : t)));
       setEditingTip(null);
     }
-    setFormData({
-      title: '',
-      content: '',
-      category: 'waste-reduction',
-      difficulty: 'easy',
-      impact: 'medium'
-    });
+    setFormData({ title: '', content: '', category: 'waste-reduction', difficulty: 'easy', impact: 'medium' });
   };
 
   const handleCancel = () => {
@@ -109,8 +107,9 @@ const AdminEcoTipsManager = () => {
     });
   };
 
-  const handleDelete = (tipId) => {
+  const handleDelete = async (tipId) => {
     if (confirm('Are you sure you want to delete this eco tip?')) {
+      await ecoTipsService.deleteTip(tipId);
       setTips(tips.filter(tip => tip.id !== tipId));
     }
   };

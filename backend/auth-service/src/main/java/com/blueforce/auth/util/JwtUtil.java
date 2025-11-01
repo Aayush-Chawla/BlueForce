@@ -41,10 +41,10 @@ public class JwtUtil {
 
     public Claims extractClaims(String token) {
         return Jwts.parser()
-                .setSigningKey(String.valueOf(Cipher.SECRET_KEY))
+                .verifyWith(keyPair.getPublic())
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     public String extractEmail(String token) {
@@ -56,7 +56,12 @@ public class JwtUtil {
     }
 
     public boolean validateToken(String token, String email) {
-        return email.equals(extractEmail(token)) &&
-                !extractClaims(token).getExpiration().before(new Date());
+        try {
+            Claims claims = extractClaims(token);
+            if (email != null && !email.equals(claims.getSubject())) return false;
+            return !claims.getExpiration().before(new Date());
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

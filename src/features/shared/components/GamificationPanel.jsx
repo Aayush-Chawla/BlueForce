@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../../../contexts/AuthContext';
+import { badgeService } from '../../../services/badgeService';
 import { Award, Lock, Gift, Star, Trophy } from 'lucide-react';
 
 const LEVELS = [
@@ -77,6 +79,9 @@ const GamificationPanel = () => {
   const [totalWaste, setTotalWaste] = useState(0);
   const [eventsInARow, setEventsInARow] = useState(0);
   const [unlockedBadges, setUnlockedBadges] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const logs = JSON.parse(localStorage.getItem('wasteLogs') || '[]');
@@ -86,6 +91,25 @@ const GamificationPanel = () => {
     setTotalWaste(logs.reduce((sum, l) => sum + (l.quantity || 0), 0));
     setEventsInARow(logs.length >= 3 ? 3 : logs.length);
   }, []);
+
+  useEffect(() => {
+    const loadBadges = async () => {
+      if (!user?.id) return;
+      setLoading(true); setError(null);
+      try {
+        const badges = await badgeService.getUserBadges(user.id);
+        setUnlockedBadges(badges.map(b => ({
+          key: b.badge?.key || b.key,
+          name: b.badge?.name || b.name,
+        })));
+      } catch (e) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadBadges();
+  }, [user?.id]);
 
   const level = calculateLevel(xp);
   const currentLevel = LEVELS.find(l => l.level === level);
@@ -139,6 +163,8 @@ const GamificationPanel = () => {
       </div>
       <div className="mb-8">
         <h3 className="text-lg font-bold text-gray-800 mb-3">Badges</h3>
+        {loading && <div className="text-gray-500 text-sm">Loading badges...</div>}
+        {error && <div className="text-red-600 text-sm">{error}</div>}
         <div className="grid grid-cols-2 gap-4">
           {earnedBadges.map(badge => (
             <div key={badge.key} className={`rounded-xl shadow p-4 flex flex-col items-center ${badge.color} relative group transition-transform hover:scale-105`}>

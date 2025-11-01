@@ -24,6 +24,8 @@ public class EventResponse {
     private Event.EventStatus status;
     private String contactEmail;
     private String contactPhone;
+    private String imageUrl;
+    private Integer wasteCollected;
     
     // Additional computed fields
     private boolean isFull;
@@ -44,6 +46,8 @@ public class EventResponse {
         response.setStatus(event.getStatus());
         response.setContactEmail(event.getContactEmail());
         response.setContactPhone(event.getContactPhone());
+        response.setImageUrl(event.getImageUrl());
+        response.setWasteCollected(event.getWasteCollected());
         
         // Compute additional fields
         response.setFull(event.getMaxParticipants() != null && 

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Award, Plus, Edit, Eye } from 'lucide-react';
 import { useAuth } from '../../contexts';
 import { useEvents } from '../../contexts';
 import CertificateTemplate from '../../components/certificate/CertificateTemplate';
 import CertificateEditor from '../../components/certificate/CertificateEditor';
-import { mockTemplates } from '../../utils/mockData';
+import { certificateService } from '../../services/certificateService';
 
 const NGOCertificates = () => {
   const { user } = useAuth();
@@ -12,6 +12,24 @@ const NGOCertificates = () => {
   const [activeTab, setActiveTab] = useState('templates');
   const [showEditor, setShowEditor] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
+  const [templates, setTemplates] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadTemplates = async () => {
+      setLoading(true); setError(null);
+      try {
+        const { items } = await certificateService.getTemplates(0, 50);
+        setTemplates(items || []);
+      } catch (e) {
+        setError(e.message || 'Failed to load templates');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadTemplates();
+  }, []);
 
   if (!user || user.role !== 'ngo') {
     return (
@@ -51,17 +69,30 @@ const NGOCertificates = () => {
     setShowEditor(true);
   };
 
-  const handleSaveTemplate = (templateData) => {
-    console.log('Saving template:', templateData);
-    setShowEditor(false);
-    setEditingTemplate(null);
-    // In a real app, this would save to the backend
+  const handleSaveTemplate = async (templateData) => {
+    try {
+      if (templateData.id && templates.some(t => t.id === templateData.id)) {
+        await certificateService.updateTemplate(templateData.id, { name: templateData.name, type: templateData.type });
+      } else {
+        await certificateService.createTemplate({ name: templateData.name, type: templateData.type });
+      }
+      const { items } = await certificateService.getTemplates(0, 50);
+      setTemplates(items || []);
+    } catch (e) {
+      alert(e.message || 'Failed to save template');
+    } finally {
+      setShowEditor(false);
+      setEditingTemplate(null);
+    }
   };
 
-  const handleIssueCertificate = (participantId, eventId, templateId) => {
-    console.log('Issuing certificate:', { participantId, eventId, templateId });
-    // In a real app, this would create and issue the certificate
-    alert('Certificate issued successfully!');
+  const handleIssueCertificate = async (participantId, eventId, templateId) => {
+    try {
+      await certificateService.issueCertificate({ participantId, eventId, templateId });
+      alert('Certificate issued successfully!');
+    } catch (e) {
+      alert(e.message || 'Failed to issue certificate');
+    }
   };
 
   return (
@@ -130,13 +161,13 @@ const NGOCertificates = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockTemplates.map(template => (
+              {templates.map(template => (
                 <div key={template.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-bold text-gray-800">{template.name}</h3>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border-blue-200`}>
-                        {template.type.charAt(0).toUpperCase() + template.type.slice(1)}
+                        {template.type?.charAt(0).toUpperCase() + template.type?.slice(1)}
                       </span>
                     </div>
                     
@@ -196,7 +227,7 @@ const NGOCertificates = () => {
                               <p className="text-sm text-gray-600">{new Date(event.date).toLocaleDateString()}</p>
                             </div>
                             <div className="flex space-x-2">
-                              {mockTemplates.map(template => (
+                              {templates.map(template => (
                                 <button
                                   key={template.id}
                                   onClick={() => handleIssueCertificate(participantId, event.id, template.id)}
