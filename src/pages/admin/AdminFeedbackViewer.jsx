@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Shield, MessageSquare } from 'lucide-react';
 import { useAuth, useEvents } from '../../contexts';
-import { mockFeedbacks } from '../../utils/mockData';
 import { FeedbackViewer } from '../../features/admin/components';
+import { feedbackService } from '../../services/feedbackService';
 
 const AdminFeedbackViewer = () => {
   const { user } = useAuth();
@@ -23,6 +23,31 @@ const AdminFeedbackViewer = () => {
     );
   }
 
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true); setError(null);
+      try {
+        const { items } = await feedbackService.list({ page: 0, limit: 200 });
+        // Map to the structure FeedbackViewer expects
+        setFeedbacks((items || []).map(f => ({
+          eventId: String(f.eventId),
+          rating: f.rating,
+          feedback: f.content,
+          createdAt: f.createdAt,
+        })));
+      } catch (e) {
+        setError(e.message || 'Failed to load feedbacks');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-teal-50">
       <div className="container mx-auto px-4 py-8">
@@ -41,7 +66,7 @@ const AdminFeedbackViewer = () => {
 
         {/* Feedback Viewer */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <FeedbackViewer feedbacks={mockFeedbacks} events={events} />
+          <FeedbackViewer feedbacks={feedbacks} events={events} />
         </div>
       </div>
     </div>

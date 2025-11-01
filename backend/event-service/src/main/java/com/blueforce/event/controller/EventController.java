@@ -39,28 +39,24 @@ public class EventController {
         return ResponseEntity.status(HttpStatus.CREATED).body(event);
     }
     
-    @GetMapping
-    public ResponseEntity<List<EventResponse>> getAllEvents(
-            @RequestParam(required = false) String location,
-            @RequestParam(required = false) String startDate,
-            @RequestParam(required = false) String endDate) {
-        
-        log.info("Fetching events with filters - location: {}, startDate: {}, endDate: {}", 
-                location, startDate, endDate);
-        
-        List<EventResponse> events;
-        
-        if (location != null && !location.trim().isEmpty()) {
-            events = eventService.getEventsByLocation(location);
-        } else if (startDate != null && endDate != null) {
-            LocalDateTime start = LocalDateTime.parse(startDate);
-            LocalDateTime end = LocalDateTime.parse(endDate);
-            events = eventService.getEventsByDateRange(start, end);
-        } else {
-            events = eventService.getAllActiveEvents();
-        }
-        
-        return ResponseEntity.ok(events);
+    @GetMapping("")
+    public ResponseEntity<?> getEvents(
+            @RequestParam(value="status",required=false) String status,
+            @RequestParam(value="location",required=false) String location,
+            @RequestParam(value="startDate",required=false) String startDate,
+            @RequestParam(value="endDate",required=false) String endDate,
+            @RequestParam(value="page",required=false) Integer page,
+            @RequestParam(value="size",required=false) Integer size) {
+        int pageNum = page != null ? page : 0, pageSize = size != null ? size : 25;
+        // Filtering logic (example, adjust for Date parsing):
+        var events = eventService.advancedList(status, location, startDate, endDate, pageNum, pageSize);
+        return ResponseEntity.ok(java.util.Map.of(
+            "success", true,
+            "events", events.getContent(),
+            "total", events.getTotalElements(),
+            "page", pageNum,
+            "size", pageSize
+        ));
     }
     
     @GetMapping("/{id}")
@@ -116,6 +112,12 @@ public class EventController {
         
         long count = eventService.getEventCountByNgo(ngoId);
         return ResponseEntity.ok(count);
+    }
+    
+    @GetMapping("/stats/overview")
+    public ResponseEntity<?> getStatsOverview() {
+        var summary = eventService.getStatsOverview();
+        return ResponseEntity.ok(java.util.Map.of("success",true,"stats",summary));
     }
     
 }

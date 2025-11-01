@@ -13,4 +13,6 @@ public class AdminProfileDto {
     private String role;
     private String fullName;
     private String phone;
+    private String avatar;
+    private String bio;
 }

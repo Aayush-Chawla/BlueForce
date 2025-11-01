@@ -55,6 +55,12 @@ public class Event {
     @Column(name = "contact_phone")
     private String contactPhone;
     
+    @Column(name = "image_url")
+    private String imageUrl;
+    
+    @Column(name = "waste_collected")
+    private Integer wasteCollected;
+    
     public enum EventStatus {
         ACTIVE, CANCELLED, COMPLETED
     }

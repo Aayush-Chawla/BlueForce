@@ -1,20 +1,34 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Trophy, Award, Users, Trash2, Calendar, LayoutGrid } from 'lucide-react';
-import { mockUsers } from '../utils/mockData';
 import { events, getBadge } from '../utils/eventData';
+import { leaderboardService } from '../services/leaderboardService';
 
-const getRankedVolunteers = () => {
-  return mockUsers
-    .filter(u => u.role === 'participant')
-    .map(u => ({
-      ...u,
-      eventsJoined: u.eventsJoined || 0,
-      totalWasteCollected: u.totalWasteCollected || 0
-    }))
-    .sort((a, b) => {
-      if (b.eventsJoined !== a.eventsJoined) return b.eventsJoined - a.eventsJoined;
-      return b.totalWasteCollected - a.totalWasteCollected;
-    });
+const useLeaderboard = () => {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true); setError(null);
+      try {
+        const { items } = await leaderboardService.getLeaderboard('participant', 0, 50);
+        setItems((items || []).map(v => ({
+          id: v.userId,
+          name: v.userName,
+          eventsJoined: v.eventsJoined,
+          totalWasteCollected: v.totalWasteCollectedKg,
+          role: 'participant',
+        })));
+      } catch (e) {
+        setError(e.message);
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+  return { items, loading, error };
 };
 
 const crownColors = [
@@ -24,7 +38,7 @@ const crownColors = [
 ];
 
 const VolunteerLeaderboard = () => {
-  const volunteers = getRankedVolunteers();
+  const { items: volunteers, loading, error } = useLeaderboard();
   const [view, setView] = useState('leaderboard'); // 'leaderboard' or 'impact'
 
   return (
@@ -69,6 +83,8 @@ const VolunteerLeaderboard = () => {
         {view === 'leaderboard' ? (
           <div className="bg-white rounded-xl shadow-lg p-6 max-h-[80vh] overflow-y-auto">
             <h2 className="text-2xl font-semibold text-sky-700 mb-4">Top Volunteers</h2>
+            {loading && <div className="text-gray-500 text-sm">Loading...</div>}
+            {error && <div className="text-red-600 text-sm">{error}</div>}
             <div className="flex flex-col gap-6">
               {volunteers.map((v, idx) => {
                 const isTopThree = idx < 3;

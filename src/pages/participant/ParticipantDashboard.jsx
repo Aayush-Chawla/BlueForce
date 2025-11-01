@@ -11,6 +11,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, 
 import html2canvas from 'html2canvas';
 import { COLORS } from '../../utils/chartColors';
 import { Download } from 'lucide-react';
+import * as userService from '../../services/userService';
 
 const ParticipantDashboard = () => {
   const { user } = useAuth();
@@ -19,6 +20,55 @@ const ParticipantDashboard = () => {
   const [showGamification, setShowGamification] = React.useState(true);
   const barChartRef = React.useRef();
   const pieChartRef = React.useRef();
+  const [editing, setEditing] = React.useState(false);
+  const [form, setForm] = React.useState({ avatar: '', bio: '', address: '' });
+  const [errors, setErrors] = React.useState({});
+  const [apiError, setApiError] = React.useState('');
+  const [successMsg, setSuccessMsg] = React.useState('');
+
+  React.useEffect(() => {
+    if (user) {
+      setForm({
+        avatar: user.avatar || '',
+        bio: user.bio || '',
+        address: user.address || ''
+      });
+    }
+  }, [user]);
+
+  const handleEdit = () => {
+    setForm({ avatar: user.avatar || '', bio: user.bio || '', address: user.address || '' });
+    setEditing(true); setErrors({}); setApiError(''); setSuccessMsg('');
+  };
+  const handleCancel = () => { setEditing(false); setErrors({}); setApiError(''); setSuccessMsg(''); };
+
+  const handleChange = e => {
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+    setErrors({ ...errors, [e.target.name]: undefined });
+  };
+
+  const handleSubmit = async e => {
+    e.preventDefault(); setApiError(''); setErrors({}); setSuccessMsg('');
+    // Frontend validation
+    let newErrs = {};
+    if (form.address && form.address.length < 3) newErrs.address = 'Address must be at least 3 characters';
+    if (Object.keys(newErrs).length > 0) { setErrors(newErrs); return; }
+    try {
+      const updated = await userService.updateProfileParticipant({
+        fullName: user.name, phone: user.phone,
+        address: form.address, avatar: form.avatar, bio: form.bio
+      });
+      setEditing(false); setSuccessMsg('Profile updated');
+      window.location.reload(); // Or refresh context state if possible
+    } catch(err) {
+      if (err && typeof err === 'object') {
+        setApiError(err.message || 'Profile update failed');
+        setErrors(err.errors || {});
+      } else {
+        setApiError('Profile update failed');
+      }
+    }
+  };
   
   if (!user || user.role !== 'participant') {
     return (
@@ -96,7 +146,7 @@ const ParticipantDashboard = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <img
-                src={user.avatar || 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400'}
+                src={form.avatar || user.avatar || 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400'}
                 alt={user.name}
                 className="w-16 h-16 rounded-full object-cover"
                 onError={e => {
@@ -110,19 +160,49 @@ const ParticipantDashboard = () => {
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">Welcome back, {user.name}!</h1>
                 <p className="text-gray-600">Environmental Participant</p>
-                {user.location && (
+                {(user.address || form.address) && (
                   <p className="text-sm text-gray-500 flex items-center mt-1">
                     <MapPin className="w-4 h-4 mr-1" />
-                    {user.location}
+                    {editing ? (
+                      <input
+                        name="address" value={form.address} onChange={handleChange}
+                        className="border px-2 py-1 rounded text-sm ml-1" placeholder="Address"
+                      />
+                    ) : (
+                      user.address
+                    )}
                   </p>
                 )}
+                {errors.address && <p className="text-xs text-red-500">{errors.address}</p>}
               </div>
+            </div>
+            <div>
+              {!editing ? (
+                <button onClick={handleEdit} className="px-4 py-2 rounded bg-sky-600 text-white">Edit Profile</button>
+              ) : (
+                <button onClick={handleCancel} className="px-4 py-2 rounded bg-gray-200 text-gray-700 ml-2">Cancel</button>
+              )}
             </div>
           </div>
         </div>
+        {editing && (
+          <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-6 mb-8 flex flex-col gap-3 max-w-xl">
+            <label className="block text-gray-700 font-semibold mb-1">Avatar Image URL
+              <input name="avatar" value={form.avatar} onChange={handleChange} className="w-full border rounded px-2 py-1 mt-1" placeholder="Image URL" />
+              {errors.avatar && <span className="text-xs text-red-500">{errors.avatar}</span>}
+            </label>
+            <label className="block text-gray-700 font-semibold mb-1">Bio/About
+              <textarea name="bio" value={form.bio} onChange={handleChange} rows={3} className="w-full border rounded px-2 py-1 mt-1" placeholder="Share something about you!" />
+              {errors.bio && <span className="text-xs text-red-500">{errors.bio}</span>}
+            </label>
+            <button type="submit" className="px-6 py-2 rounded bg-teal-600 text-white mt-2 max-w-xs">Save</button>
+            {apiError && <div className="text-red-600 text-sm mt-1">{apiError}</div>}
+            {successMsg && <div className="text-green-600 text-sm mt-1">{successMsg}</div>}
+          </form>
+        )}
 
         {/* Bio Section */}
-        {user.bio && (
+        {!editing && user.bio && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
             <h2 className="text-xl font-bold text-gray-800 mb-4">About</h2>
             <p className="text-gray-600 leading-relaxed">{user.bio}</p>

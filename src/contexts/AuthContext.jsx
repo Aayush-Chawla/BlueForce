@@ -17,15 +17,42 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for saved user in localStorage
-    const savedUser = localStorage.getItem('beachCleanupUser');
-    console.log('AuthContext - Saved user from localStorage:', savedUser);
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      console.log('AuthContext - Parsed user:', parsedUser);
-      setUser(parsedUser);
-    }
-    setIsLoading(false);
+    const init = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          const resp = await fetch('http://localhost:9090/api/auth/validate', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const json = await resp.json();
+          if (resp.ok && json?.success && json?.data) {
+            const u = {
+              id: json.data.userId,
+              email: json.data.email,
+              role: json.data.role,
+              verified: json.data.verified
+            };
+            setUser(u);
+            localStorage.setItem('beachCleanupUser', JSON.stringify(u));
+          } else {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('beachCleanupUser');
+            setUser(null);
+          }
+        } else {
+          // Fallback to saved user if any (dev mode)
+          const savedUser = localStorage.getItem('beachCleanupUser');
+          if (savedUser) setUser(JSON.parse(savedUser));
+        }
+      } catch (e) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('beachCleanupUser');
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    init();
   }, []);
 
   const login = async (email, password) => {
@@ -70,8 +97,8 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     setIsLoading(true);
     try {
-      // Try real auth service first
       const data = await authService.register(userData);
+      // Register no longer yields token; leave user logged out or optionally auto-login.
       setUser(data.user);
       setIsLoading(false);
       return data;

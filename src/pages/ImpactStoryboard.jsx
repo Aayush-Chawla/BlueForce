@@ -1,11 +1,22 @@
-import React from 'react';
-import { mockImpactStories } from '../utils/mockData';
+import React, { useEffect, useState } from 'react';
+import storyboardService from '../services/storyboardService';
 import StoryCard from '../components/common/StoryCard';
 import { Sparkles } from 'lucide-react';
 
 const ImpactStoryboard = () => {
-  // Sort stories by date, newest first
-  const stories = [...mockImpactStories].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const [stories, setStories] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const items = await storyboardService.list({ page: 0, limit: 100 });
+        const sorted = [...items].sort((a, b) => new Date(b.date) - new Date(a.date));
+        setStories(sorted);
+      } catch (e) {
+        setStories([]);
+      }
+    })();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-teal-50">

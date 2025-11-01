@@ -33,8 +33,6 @@ public class EventParticipantResponse {
         response.setEnrolledAt(participant.getEnrolledAt());
         response.setStatus(participant.getStatus());
         response.setAttended(participant.getAttended());
-        response.setFeedback(participant.getFeedback());
-        response.setRating(participant.getRating());
         return response;
     }
 }

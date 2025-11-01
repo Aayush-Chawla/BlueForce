@@ -33,14 +33,11 @@ public class EventParticipant {
     @Enumerated(EnumType.STRING)
     private ParticipationStatus status = ParticipationStatus.ENROLLED;
     
+    @Column(name = "status_reason")
+    private String statusReason;
+    
     @Column(name = "attended")
     private Boolean attended;
-    
-    @Column(name = "feedback")
-    private String feedback;
-    
-    @Column(name = "rating")
-    private Integer rating;
     
     // Relationship with Event (for JPA queries)
     @ManyToOne(fetch = FetchType.LAZY)
@@ -48,6 +45,6 @@ public class EventParticipant {
     private Event event;
     
     public enum ParticipationStatus {
-        ENROLLED, CANCELLED, COMPLETED
+        ENROLLED, APPROVED, REJECTED, COMPLETED, CANCELLED
     }
 }

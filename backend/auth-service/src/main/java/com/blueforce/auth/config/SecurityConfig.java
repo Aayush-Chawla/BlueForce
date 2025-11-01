@@ -21,6 +21,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/register",
                                 "/api/auth/login",
+                                "/api/auth/validate",
                                 "/.well-known/jwks.json"
                         ).permitAll()
                         .anyRequest().authenticated()

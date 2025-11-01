@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth, useEvents } from '../contexts';
-import { mockFeedbacks } from '../utils/mockData';
+import { feedbackService } from '../services/feedbackService';
 import { Star } from 'lucide-react';
 
 const PostEventFeedback = () => {
@@ -18,14 +18,16 @@ const PostEventFeedback = () => {
   const [feedback, setFeedback] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  // In a real app, this would update backend/localStorage
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (rating < 1 || !feedback.trim()) return;
-    // Save feedback anonymously (mock)
-    mockFeedbacks.push({ eventId, rating, feedback, createdAt: new Date().toISOString() });
-    setSubmitted(true);
-    setTimeout(() => navigate('/dashboard'), 2000);
+    try {
+      await feedbackService.submit({ eventId, rating, feedback });
+      setSubmitted(true);
+      setTimeout(() => navigate('/dashboard'), 2000);
+    } catch (err) {
+      alert(err.message || 'Failed to submit feedback');
+    }
   };
 
   if (!event) {

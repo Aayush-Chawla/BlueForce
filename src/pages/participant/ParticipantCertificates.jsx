@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Award, Download, Share2, Calendar, MapPin, CheckCircle, Search, Filter } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { certificateService } from '../../services/certificateService';
 
 const ParticipantCertificates = () => {
   const { user } = useAuth();
@@ -18,52 +19,29 @@ const ParticipantCertificates = () => {
     );
   }
 
-  // Mock certificates data - in a real app, this would come from an API
-  const mockCertificates = [
-    {
-      id: '1',
-      eventId: '1',
-      eventTitle: 'Golden Gate Beach Cleanup',
-      participantId: user?.id || '2',
-      participantName: user?.name || 'Alex Chen',
-      organizerId: '1',
-      organizerName: 'Ocean Guardians NGO',
-      dateIssued: '2024-11-25',
-      wasteCollected: 15.5,
-      certificateType: 'participation',
-      verificationCode: 'CW-2024-GG-001'
-    },
-    {
-      id: '2',
-      eventId: '3',
-      eventTitle: 'Half Moon Bay Community Cleanup',
-      participantId: user?.id || '2',
-      participantName: user?.name || 'Alex Chen',
-      organizerId: '1',
-      organizerName: 'Ocean Guardians NGO',
-      dateIssued: '2024-11-25',
-      wasteCollected: 22.3,
-      certificateType: 'achievement',
-      verificationCode: 'CW-2024-HMB-002'
-    },
-    {
-      id: '3',
-      eventId: '2',
-      eventTitle: 'Monterey Bay Restoration',
-      participantId: user?.id || '2',
-      participantName: user?.name || 'Alex Chen',
-      organizerId: '1',
-      organizerName: 'Ocean Guardians NGO',
-      dateIssued: '2024-12-01',
-      wasteCollected: 18.7,
-      certificateType: 'leadership',
-      verificationCode: 'CW-2024-MB-003'
-    }
-  ];
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const filteredCertificates = mockCertificates.filter(cert =>
-    cert.eventTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cert.organizerName.toLowerCase().includes(searchTerm.toLowerCase())
+  useEffect(() => {
+    const load = async () => {
+      if (!user?.id) return;
+      setLoading(true); setError(null);
+      try {
+        const { items } = await certificateService.getMyCertificates(user.id, 0, 100);
+        setItems(items || []);
+      } catch (e) {
+        setError(e.message || 'Failed to load certificates');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [user?.id]);
+
+  const filteredCertificates = (items || []).filter(cert =>
+    (cert.eventTitle || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (cert.organizerName || '').toLowerCase().includes(searchTerm.toLowerCase())
   ).filter(cert =>
     filterType === 'all' || cert.certificateType === filterType
   );
@@ -135,7 +113,7 @@ const ParticipantCertificates = () => {
               <CheckCircle className="w-6 h-6 text-white" />
             </div>
             <h3 className="text-2xl font-bold text-gray-800">
-              {mockCertificates.reduce((total, cert) => total + (cert.wasteCollected || 0), 0).toFixed(1)} kg
+              {items.reduce((total, cert) => total + (cert.wasteCollected || 0), 0).toFixed(1)} kg
             </h3>
             <p className="text-gray-600">Total Waste Collected</p>
           </div>
@@ -145,7 +123,7 @@ const ParticipantCertificates = () => {
               <Award className="w-6 h-6 text-white" />
             </div>
             <h3 className="text-2xl font-bold text-gray-800">
-              {mockCertificates.filter(cert => cert.certificateType === 'leadership').length}
+              {items.filter(cert => cert.certificateType === 'leadership').length}
             </h3>
             <p className="text-gray-600">Leadership Awards</p>
           </div>
@@ -196,7 +174,7 @@ const ParticipantCertificates = () => {
                       {certificate.certificateType.charAt(0).toUpperCase() + certificate.certificateType.slice(1)}
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold mb-2">{certificate.eventTitle}</h3>
+                  <h3 className="text-xl font-bold mb-2">{certificate.eventTitle || 'Event'}</h3>
                   <p className="text-sky-100 text-sm">Certificate of {certificate.certificateType}</p>
                 </div>
 
@@ -210,7 +188,7 @@ const ParticipantCertificates = () => {
                     <div className="flex items-center text-gray-600">
                       <Calendar className="w-4 h-4 mr-2" />
                       <span className="text-sm">
-                        {new Date(certificate.dateIssued).toLocaleDateString('en-US', {
+                        {new Date(certificate.issuedAt || certificate.dateIssued).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric'
