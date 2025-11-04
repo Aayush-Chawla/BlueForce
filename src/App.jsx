@@ -14,6 +14,7 @@ import EcoTips from './pages/EcoTips';
 import VolunteerLeaderboard from './pages/VolunteerLeaderboard';
 import ImpactStoryboard from './pages/ImpactStoryboard';
 import PostEventFeedback from './pages/PostEventFeedback';
+import PostAttendance from './pages/PostAttendance';
 import ChatHelpCenter from './pages/ChatHelpCenter';
 import EventDetails from './pages/EventDetails';
 import NGODashboard from './pages/ngo/NGODashboard';
@@ -130,6 +131,11 @@ const AppContent = () => {
           <Route path="/events/:eventId/feedback" element={
             <ProtectedRoute>
               <PostEventFeedback />
+            </ProtectedRoute>
+          } />
+          <Route path="/post-attendance" element={
+            <ProtectedRoute>
+              <PostAttendance />
             </ProtectedRoute>
           } />
           <Route path="/chat-help-center" element={<ChatHelpCenter />} />

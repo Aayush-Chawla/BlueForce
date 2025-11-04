@@ -226,4 +226,96 @@ public class EventParticipantService {
         return eventRepository.findById(eventId)
                 .orElseThrow(() -> new RuntimeException("Event not found with ID: " + eventId));
     }
+    
+    public void markAttendance(Long eventId, Long userId) {
+        log.info("Marking attendance for user {} in event {}", userId, eventId);
+        
+        EventParticipant participant = eventParticipantRepository
+                .findByEventIdAndUserId(eventId, userId)
+                .orElseThrow(() -> new RuntimeException("Participant not found for event " + eventId));
+        
+        if (participant.getStatus() != EventParticipant.ParticipationStatus.ENROLLED) {
+            throw new RuntimeException("Participant is not enrolled in this event");
+        }
+        
+        participant.setAttended(true);
+        participant.setAttendedAt(LocalDateTime.now());
+        eventParticipantRepository.save(participant);
+        
+        log.info("Attendance marked successfully for user {} in event {}", userId, eventId);
+    }
+    
+    public void submitWasteCollection(Long eventId, Long userId, Double wasteCollected, 
+                                       String wasteType, String notes, String imageUrl) {
+        log.info("Submitting waste collection for user {} in event {}: {} kg", userId, eventId, wasteCollected);
+        
+        EventParticipant participant = eventParticipantRepository
+                .findByEventIdAndUserId(eventId, userId)
+                .orElseThrow(() -> new RuntimeException("Participant not found for event " + eventId));
+        
+        if (participant.getStatus() != EventParticipant.ParticipationStatus.ENROLLED) {
+            throw new RuntimeException("Participant is not enrolled in this event");
+        }
+        
+        // Mark as attended if not already
+        if (participant.getAttended() == null || !participant.getAttended()) {
+            participant.setAttended(true);
+            participant.setAttendedAt(LocalDateTime.now());
+        }
+        
+        participant.setWasteCollectedKg(wasteCollected);
+        participant.setWasteType(wasteType);
+        participant.setWasteCollectionNotes(notes);
+        participant.setWasteCollectionImageUrl(imageUrl);
+        
+        log.info("Saving waste collection data - wasteCollectedKg: {}, wasteType: {}, imageUrl: {}", 
+                wasteCollected, wasteType, imageUrl);
+        
+        EventParticipant saved = eventParticipantRepository.save(participant);
+        
+        log.info("Saved participant - ID: {}, wasteCollectedKg: {}, imageUrl: {}", 
+                saved.getId(), saved.getWasteCollectedKg(), saved.getWasteCollectionImageUrl());
+        
+        // Update event total waste collected
+        updateEventWasteCollected(eventId);
+        
+        // Send Kafka event for leaderboard update
+        sendWasteCollectionEvent(eventId, userId, wasteCollected);
+        
+        log.info("Waste collection submitted successfully for user {} in event {}", userId, eventId);
+    }
+    
+    private void updateEventWasteCollected(Long eventId) {
+        Double totalWaste = eventParticipantRepository
+                .findByEventIdOrderByEnrolledAtDesc(eventId)
+                .stream()
+                .filter(p -> p.getWasteCollectedKg() != null)
+                .mapToDouble(EventParticipant::getWasteCollectedKg)
+                .sum();
+        
+        eventRepository.findById(eventId).ifPresent(event -> {
+            event.setWasteCollected(totalWaste.intValue());
+            eventRepository.save(event);
+        });
+    }
+    
+    private void sendWasteCollectionEvent(Long eventId, Long userId, Double wasteCollected) {
+        try {
+            // Calculate XP (e.g., 10 XP per kg of waste)
+            int xpEarned = (int) (wasteCollected * 10);
+            
+            Map<String, Object> wasteEvent = new java.util.HashMap<>();
+            wasteEvent.put("userId", userId);
+            wasteEvent.put("userName", "Participant " + userId); // TODO: Get from UserService
+            wasteEvent.put("role", "PARTICIPANT");
+            wasteEvent.put("quantityKg", wasteCollected);
+            wasteEvent.put("xpEarned", xpEarned);
+            wasteEvent.put("eventId", eventId);
+            
+            kafkaTemplate.send("waste-updates", wasteEvent);
+            log.info("Waste collection event sent to Kafka for user: {} in event: {}", userId, eventId);
+        } catch (Exception e) {
+            log.error("Failed to send waste collection event to Kafka", e);
+        }
+    }
 }

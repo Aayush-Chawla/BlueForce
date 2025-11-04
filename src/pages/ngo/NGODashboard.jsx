@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth, useEvents } from '../../contexts';
 import { getDailyTip } from '../../utils/ecoTipsData';
 import { EventCard } from '../../features/ngo/components';
+import EventParticipantsList from '../../features/ngo/components/EventParticipantsList';
 import EcoTipCard from '../../components/common/EcoTipCard';
 import AnalyticsChart from '../../components/charts/AnalyticsChart';
 import SocialMediaGenerator from '../../components/certificate/SocialMediaGenerator';
@@ -244,6 +245,8 @@ const NGODashboard = () => {
               {completedEvents.map(event => (
                 <div key={event.id} className="relative">
                   <EventCard event={event} className="opacity-75" />
+                  {/* Show participant details with attendance and waste collection */}
+                  <EventParticipantsList eventId={event.id} />
                   {/* Show feedback to organizer */}
                   {mockFeedbacks.filter(fb => fb.eventId === event.id).length > 0 && (
                     <div className="mt-4 bg-sky-50 border border-sky-100 rounded-lg p-4">

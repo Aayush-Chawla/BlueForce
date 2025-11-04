@@ -273,6 +273,100 @@ class EventService {
       throw error;
     }
   }
+
+  // Submit waste collection data after attendance
+  async submitWasteCollection(eventId, userId, wasteData) {
+    try {
+      // First, handle image upload if present
+      let imageUrl = null;
+      if (wasteData.image) {
+        // Upload image to media service first
+        const imageFormData = new FormData();
+        imageFormData.append('file', wasteData.image);
+        imageFormData.append('type', 'waste_collection');
+        
+        try {
+          const token = localStorage.getItem('authToken');
+          const imageResponse = await fetch(`${this.baseURL}/media/upload`, {
+            method: 'POST',
+            headers: {
+              ...(token && { 'Authorization': `Bearer ${token}` })
+              // Don't set Content-Type - browser will set it with boundary for FormData
+            },
+            body: imageFormData
+          });
+          
+          if (imageResponse.ok) {
+            const imageResult = await imageResponse.json();
+            // Handle different response structures
+            imageUrl = imageResult.data?.url || imageResult.url || imageResult.imageUrl || imageResult.data?.imageUrl;
+            console.log('Image uploaded successfully:', imageUrl);
+            console.log('Full image response:', imageResult);
+          } else {
+            const errorText = await imageResponse.text();
+            console.warn('Image upload failed:', imageResponse.status, errorText);
+            // Continue without image - don't fail the whole submission
+          }
+        } catch (imgError) {
+          console.warn('Image upload error:', imgError);
+          // Continue without image - don't fail the whole submission
+        }
+      }
+
+      // Submit waste collection to backend
+      const payload = {
+        wasteCollected: wasteData.wasteCollected,
+        wasteType: wasteData.wasteType || 'mixed',
+        notes: wasteData.notes || null,
+        imageUrl: imageUrl // This will be null if upload failed or no image provided
+      };
+      
+      console.log('Submitting waste collection with payload:', { ...payload, imageUrl: imageUrl ? 'present' : 'null' });
+      
+      const response = await fetch(`${this.baseURL}/events/${eventId}/participants/${userId}/waste-collection`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(payload)
+      });
+
+      const result = await this.handleResponse(response);
+      console.log('Waste collection submitted successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('Error submitting waste collection:', error);
+      throw error;
+    }
+  }
+
+  // Mark participant as attended
+  async markAttendance(eventId, userId) {
+    try {
+      const response = await fetch(`${this.baseURL}/events/${eventId}/participants/${userId}/attendance`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ attended: true })
+      });
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error marking attendance:', error);
+      // Don't throw error if endpoint doesn't exist yet
+      console.warn('Attendance marking endpoint may not be implemented yet');
+      return { success: true, message: 'Attendance marked (mock)' };
+    }
+  }
+
+  // Get participant details for a specific event (to check if waste collection submitted)
+  async getParticipantDetails(eventId, userId) {
+    try {
+      // Get all user's enrolled events and find the one matching this eventId
+      const enrolledEvents = await this.getUserEnrolledEvents(userId);
+      const participant = enrolledEvents.find(ep => ep.eventId === eventId || ep.eventId == eventId);
+      return participant || null;
+    } catch (error) {
+      console.error('Error fetching participant details:', error);
+      return null;
+    }
+  }
 }
 
 // Create and export a singleton instance

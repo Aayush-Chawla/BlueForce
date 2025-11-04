@@ -143,4 +143,51 @@ public class EventParticipantController {
         }
     }
     
+    @PostMapping("/{eventId}/participants/{userId}/attendance")
+    public ResponseEntity<?> markAttendance(@PathVariable Long eventId, 
+                                            @PathVariable Long userId,
+                                            Authentication authentication) {
+        try {
+            Long authUserId = jwtTokenExtractor.extractUserId(authentication);
+            if (!authUserId.equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(java.util.Map.of("success", false, "message", "You can only mark your own attendance"));
+            }
+            
+            eventParticipantService.markAttendance(eventId, userId);
+            return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Attendance marked successfully"));
+        } catch (Exception ex) {
+            log.error("Error marking attendance: {}", ex.getMessage());
+            return ResponseEntity.status(400)
+                .body(java.util.Map.of("success", false, "message", ex.getMessage()));
+        }
+    }
+    
+    @PostMapping("/{eventId}/participants/{userId}/waste-collection")
+    public ResponseEntity<?> submitWasteCollection(@PathVariable Long eventId,
+                                                   @PathVariable Long userId,
+                                                   @RequestBody java.util.Map<String, Object> body,
+                                                   Authentication authentication) {
+        try {
+            Long authUserId = jwtTokenExtractor.extractUserId(authentication);
+            if (!authUserId.equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(java.util.Map.of("success", false, "message", "You can only submit your own waste collection"));
+            }
+            
+            Double wasteCollected = body.get("wasteCollected") != null ? 
+                Double.parseDouble(String.valueOf(body.get("wasteCollected"))) : null;
+            String wasteType = (String) body.getOrDefault("wasteType", "mixed");
+            String notes = (String) body.getOrDefault("notes", null);
+            String imageUrl = (String) body.getOrDefault("imageUrl", null);
+            
+            eventParticipantService.submitWasteCollection(eventId, userId, wasteCollected, wasteType, notes, imageUrl);
+            return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Waste collection submitted successfully"));
+        } catch (Exception ex) {
+            log.error("Error submitting waste collection: {}", ex.getMessage());
+            return ResponseEntity.status(400)
+                .body(java.util.Map.of("success", false, "message", ex.getMessage()));
+        }
+    }
+    
 }

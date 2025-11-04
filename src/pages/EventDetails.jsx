@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useEvents } from '../contexts';
 import { useAuth } from '../contexts';
 import QRCode from 'react-qr-code';
-import { QrCode, ArrowLeft, Star, Users, MapPin, Calendar as CalendarIcon, Clock, Waves, Trash2, Share2 } from 'lucide-react';
+import { QrCode, ArrowLeft, Star, Users, MapPin, Calendar as CalendarIcon, Clock, Waves, Trash2, Share2, CheckCircle } from 'lucide-react';
 import { mockFeedbacks } from '../utils/mockData';
 import { eventService } from '../services/eventService';
 
@@ -17,6 +17,8 @@ const EventDetails = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [isParticipant, setIsParticipant] = useState(false);
   const [checkingEnrollment, setCheckingEnrollment] = useState(true);
+  const [hasSubmittedWaste, setHasSubmittedWaste] = useState(false);
+  const [participantDetails, setParticipantDetails] = useState(null);
   const navigate = useNavigate();
   
   // Always call hooks at the top level
@@ -35,7 +37,7 @@ const EventDetails = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Check if user is enrolled in this event
+  // Check if user is enrolled in this event and if waste collection has been submitted
   useEffect(() => {
     const checkEnrollment = async () => {
       if (!user || !event || user.role !== 'participant') {
@@ -47,6 +49,19 @@ const EventDetails = () => {
       try {
         const enrolled = await eventService.isUserEnrolled(event.id, user.id);
         setIsParticipant(enrolled);
+        
+        // If enrolled, check if waste collection has been submitted
+        if (enrolled) {
+          const participantDetails = await eventService.getParticipantDetails(event.id, user.id);
+          if (participantDetails) {
+            setParticipantDetails(participantDetails);
+            // Check if waste collection has been submitted
+            const hasWasteData = participantDetails.wasteCollectedKg != null && participantDetails.wasteCollectedKg > 0;
+            setHasSubmittedWaste(hasWasteData);
+            console.log(`User ${user.id} waste collection status:`, hasWasteData, participantDetails);
+          }
+        }
+        
         console.log(`User ${user.id} enrollment status for event ${event.id}:`, enrolled);
       } catch (error) {
         console.error('Error checking enrollment status:', error);
@@ -193,8 +208,8 @@ const EventDetails = () => {
           </button>
           <div className="bg-white rounded-xl shadow-lg p-8 border border-sky-100 relative overflow-hidden animate-fade-in-up">
             <div className="absolute -top-8 -right-8 opacity-10 text-sky-400 text-[8rem] pointer-events-none select-none"><Waves className="w-32 h-32" /></div>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-              <div className="flex items-center gap-4 mb-4 md:mb-0">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+              <div className="flex items-center gap-4">
                 <Users className="w-6 h-6 text-sky-400" />
                 <span className="font-semibold text-gray-700">Participants:</span>
                 <div className="flex -space-x-2">
@@ -206,7 +221,7 @@ const EventDetails = () => {
                   )}
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 items-center justify-start md:justify-end">
                 {canJoin && (
                   <button
                     onClick={async () => {
@@ -224,7 +239,7 @@ const EventDetails = () => {
                       }
                     }}
                     disabled={actionLoading}
-                    className="px-5 py-2 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 transition-all font-semibold shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-5 py-2 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 transition-all font-semibold shadow disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                   >
                     {actionLoading ? 'Joining...' : 'Join Event'}
                   </button>
@@ -246,19 +261,35 @@ const EventDetails = () => {
                       }
                     }}
                     disabled={actionLoading}
-                    className="px-5 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors font-semibold shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-5 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors font-semibold shadow disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                   >
                     {actionLoading ? 'Leaving...' : 'Leave Event'}
                   </button>
                 )}
                 {isParticipant && (
-                  <button
-                    onClick={() => setShowQR(true)}
-                    className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full shadow-lg hover:scale-110 hover:shadow-xl transition-transform duration-200 font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400 animate-bounce-once"
-                    style={{ willChange: 'transform' }}
-                  >
-                    <QrCode className="w-5 h-5" /> Show My QR Code
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setShowQR(true)}
+                      className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full shadow-lg hover:scale-110 hover:shadow-xl transition-transform duration-200 font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400 animate-bounce-once whitespace-nowrap"
+                      style={{ willChange: 'transform' }}
+                    >
+                      <QrCode className="w-5 h-5" /> Show My QR Code
+                    </button>
+                    {!hasSubmittedWaste && (
+                      <button
+                        onClick={() => navigate(`/post-attendance?eventId=${event.id}&userId=${user?.id}`)}
+                        className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-full shadow-lg hover:scale-110 hover:shadow-xl transition-transform duration-200 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400 whitespace-nowrap"
+                      >
+                        <CheckCircle className="w-5 h-5" /> Submit Waste Collection
+                      </button>
+                    )}
+                    {hasSubmittedWaste && participantDetails && (
+                      <div className="flex items-center gap-2 px-5 py-2 bg-green-50 border-2 border-green-200 text-green-700 rounded-full font-semibold whitespace-nowrap">
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                        <span>Waste Submitted ({participantDetails.wasteCollectedKg} kg)</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
