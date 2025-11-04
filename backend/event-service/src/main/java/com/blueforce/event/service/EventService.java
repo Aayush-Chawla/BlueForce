@@ -71,8 +71,11 @@ public class EventService {
     @Transactional(readOnly = true)
     public List<EventResponse> getEventsByNgo(Long ngoId) {
         log.info("Fetching events for NGO: {}", ngoId);
+        LocalDateTime now = LocalDateTime.now();
         List<Event> events = eventRepository.findByNgoIdAndStatusOrderByDateTimeDesc(ngoId, Event.EventStatus.ACTIVE);
+        // Filter out expired events (events that have passed their dateTime)
         return events.stream()
+                .filter(event -> event.getDateTime().isAfter(now))
                 .map(EventResponse::fromEntity)
                 .collect(Collectors.toList());
     }
@@ -80,8 +83,11 @@ public class EventService {
     @Transactional(readOnly = true)
     public List<EventResponse> getEventsByLocation(String location) {
         log.info("Fetching events by location: {}", location);
+        LocalDateTime now = LocalDateTime.now();
         List<Event> events = eventRepository.findByLocationContainingIgnoreCaseAndStatusOrderByDateTimeDesc(location, Event.EventStatus.ACTIVE);
+        // Filter out expired events (events that have passed their dateTime)
         return events.stream()
+                .filter(event -> event.getDateTime().isAfter(now))
                 .map(EventResponse::fromEntity)
                 .collect(Collectors.toList());
     }
@@ -138,6 +144,32 @@ public class EventService {
         log.info("Event cancelled successfully: {}", eventId);
     }
     
+    /**
+     * Marks expired events (events with dateTime in the past) as COMPLETED
+     * This method is called automatically by a scheduled task
+     */
+    @Transactional
+    public int expireEvents() {
+        log.info("Checking for expired events...");
+        LocalDateTime now = LocalDateTime.now();
+        List<Event> expiredEvents = eventRepository.findExpiredActiveEvents(now);
+        
+        if (expiredEvents.isEmpty()) {
+            log.info("No expired events found");
+            return 0;
+        }
+        
+        log.info("Found {} expired events, marking as COMPLETED", expiredEvents.size());
+        expiredEvents.forEach(event -> {
+            event.setStatus(Event.EventStatus.COMPLETED);
+            log.debug("Marking event {} ({}) as COMPLETED", event.getId(), event.getTitle());
+        });
+        
+        eventRepository.saveAll(expiredEvents);
+        log.info("Successfully expired {} events", expiredEvents.size());
+        return expiredEvents.size();
+    }
+    
     @Transactional(readOnly = true)
     public long getEventCountByNgo(Long ngoId) {
         return eventRepository.countByNgoIdAndStatus(ngoId, Event.EventStatus.ACTIVE);
@@ -145,12 +177,28 @@ public class EventService {
 
     public Page<EventResponse> advancedList(String status, String location, String startDate, String endDate, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
+        LocalDateTime now = LocalDateTime.now();
         List<Event> filtered = eventRepository.findAll();
+        
+        // By default, filter out expired events (unless status is explicitly COMPLETED or CANCELLED)
+        if (status == null || status.isBlank()) {
+            filtered = filtered.stream()
+                .filter(e -> e.getStatus() == Event.EventStatus.ACTIVE && e.getDateTime().isAfter(now))
+                .toList();
+        }
+        
         if (status != null && !status.isBlank()) {
             String stat = status.trim().toUpperCase();
             filtered = filtered.stream()
                 .filter(e -> e.getStatus().name().equals(stat))
                 .toList();
+            
+            // If status is ACTIVE, also filter out expired events
+            if ("ACTIVE".equals(stat)) {
+                filtered = filtered.stream()
+                    .filter(e -> e.getDateTime().isAfter(now))
+                    .toList();
+            }
         }
         if (location != null && !location.isBlank()) {
             filtered = filtered.stream()

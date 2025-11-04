@@ -1,5 +1,6 @@
 package com.blueforce.event.service;
 
+import com.blueforce.event.client.CertificateServiceClient;
 import com.blueforce.event.dto.EnrollRequest;
 import com.blueforce.event.dto.EventEnrollmentEvent;
 import com.blueforce.event.dto.EventParticipantResponse;
@@ -28,6 +29,7 @@ public class EventParticipantService {
     private final EventParticipantRepository eventParticipantRepository;
     private final EventRepository eventRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final CertificateServiceClient certificateServiceClient;
     
     public EventParticipantResponse enrollInEvent(Long eventId, EnrollRequest request) {
         log.info("=== ENROLLMENT SERVICE DEBUG ===");
@@ -178,6 +180,14 @@ public class EventParticipantService {
                 .map(participant -> participant.getStatus() == EventParticipant.ParticipationStatus.ENROLLED)
                 .orElse(false);
     }
+    
+    @Transactional(readOnly = true)
+    public Optional<EventParticipantResponse> getParticipantDetails(Long eventId, Long userId) {
+        log.info("Fetching participant details for user {} in event {}", userId, eventId);
+        
+        Optional<EventParticipant> participant = eventParticipantRepository.findByEventIdAndUserId(eventId, userId);
+        return participant.map(EventParticipantResponse::fromEntity);
+    }
 
     public java.util.List<java.util.Map<String, Object>> getParticipantRoster(Long eventId) {
         var parts = eventParticipantRepository.findByEventIdOrderByEnrolledAtDesc(eventId);
@@ -240,7 +250,11 @@ public class EventParticipantService {
         
         participant.setAttended(true);
         participant.setAttendedAt(LocalDateTime.now());
+        participant.setStatus(EventParticipant.ParticipationStatus.COMPLETED);
         eventParticipantRepository.save(participant);
+        
+        // Automatically issue certificate when participant completes event
+        issueCertificateForParticipant(eventId, userId);
         
         log.info("Attendance marked successfully for user {} in event {}", userId, eventId);
     }
@@ -271,6 +285,8 @@ public class EventParticipantService {
         log.info("Saving waste collection data - wasteCollectedKg: {}, wasteType: {}, imageUrl: {}", 
                 wasteCollected, wasteType, imageUrl);
         
+        // Mark participant as completed
+        participant.setStatus(EventParticipant.ParticipationStatus.COMPLETED);
         EventParticipant saved = eventParticipantRepository.save(participant);
         
         log.info("Saved participant - ID: {}, wasteCollectedKg: {}, imageUrl: {}", 
@@ -281,6 +297,9 @@ public class EventParticipantService {
         
         // Send Kafka event for leaderboard update
         sendWasteCollectionEvent(eventId, userId, wasteCollected);
+        
+        // Automatically issue certificate when participant completes event
+        issueCertificateForParticipant(eventId, userId);
         
         log.info("Waste collection submitted successfully for user {} in event {}", userId, eventId);
     }
@@ -316,6 +335,40 @@ public class EventParticipantService {
             log.info("Waste collection event sent to Kafka for user: {} in event: {}", userId, eventId);
         } catch (Exception e) {
             log.error("Failed to send waste collection event to Kafka", e);
+        }
+    }
+    
+    /**
+     * Automatically issue certificate for participant when they complete an event
+     */
+    private void issueCertificateForParticipant(Long eventId, Long userId) {
+        try {
+            // Get event to find organizer
+            Event event = eventRepository.findById(eventId)
+                    .orElseThrow(() -> new RuntimeException("Event not found with ID: " + eventId));
+            
+            Long organizerId = event.getNgoId();
+            
+            // Check if certificate already exists
+            if (certificateServiceClient.certificateExists(userId, eventId)) {
+                log.info("Certificate already exists for participant {} in event {}", userId, eventId);
+                return;
+            }
+            
+            // Get or create default template for organizer
+            Long templateId = certificateServiceClient.getOrCreateDefaultTemplate(organizerId);
+            if (templateId == null) {
+                log.error("Failed to get or create template for organizer {}", organizerId);
+                return;
+            }
+            
+            // Issue certificate
+            certificateServiceClient.issueCertificate(organizerId, userId, eventId, templateId, "participation");
+            log.info("Certificate automatically issued for participant {} in event {}", userId, eventId);
+        } catch (Exception e) {
+            log.error("Error issuing certificate for participant {} in event {}: {}", 
+                    userId, eventId, e.getMessage());
+            // Don't throw exception - certificate issuance failure shouldn't block event completion
         }
     }
 }

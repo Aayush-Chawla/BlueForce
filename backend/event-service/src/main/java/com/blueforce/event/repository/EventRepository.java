@@ -31,4 +31,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     
     // Count events by NGO
     long countByNgoIdAndStatus(Long ngoId, Event.EventStatus status);
+    
+    // Find expired active events (events that have passed their dateTime)
+    @Query("SELECT e FROM Event e WHERE e.dateTime < :currentTime AND e.status = 'ACTIVE'")
+    List<Event> findExpiredActiveEvents(@Param("currentTime") LocalDateTime currentTime);
 }

@@ -359,10 +359,17 @@ class EventService {
   // Get participant details for a specific event (to check if waste collection submitted)
   async getParticipantDetails(eventId, userId) {
     try {
-      // Get all user's enrolled events and find the one matching this eventId
-      const enrolledEvents = await this.getUserEnrolledEvents(userId);
-      const participant = enrolledEvents.find(ep => ep.eventId === eventId || ep.eventId == eventId);
-      return participant || null;
+      const response = await fetch(`${this.baseURL}/events/${eventId}/participants/user/${userId}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null; // Participant not found
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
     } catch (error) {
       console.error('Error fetching participant details:', error);
       return null;

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/events")
@@ -129,6 +130,25 @@ public class EventParticipantController {
         
         boolean enrolled = eventParticipantService.isUserEnrolled(eventId, userId);
         return ResponseEntity.ok(enrolled);
+    }
+    
+    @GetMapping("/{eventId}/participants/user/{userId}")
+    public ResponseEntity<?> getParticipantDetails(@PathVariable Long eventId, @PathVariable Long userId) {
+        log.info("Fetching participant details for user {} in event {}", userId, eventId);
+        
+        try {
+            Optional<EventParticipantResponse> participant = eventParticipantService.getParticipantDetails(eventId, userId);
+            if (participant.isPresent()) {
+                return ResponseEntity.ok(participant.get());
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(java.util.Map.of("success", false, "message", "Participant not found"));
+            }
+        } catch (Exception ex) {
+            log.error("Error fetching participant details: {}", ex.getMessage());
+            return ResponseEntity.status(400)
+                .body(java.util.Map.of("success", false, "message", ex.getMessage()));
+        }
     }
     
     @GetMapping("/{eventId}/test")
