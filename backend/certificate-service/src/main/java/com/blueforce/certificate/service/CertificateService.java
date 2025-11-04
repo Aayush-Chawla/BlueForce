@@ -57,6 +57,10 @@ public class CertificateService {
                 .build();
         return certificateRepository.save(c);
     }
+
+    public boolean certificateExists(Long participantId, Long eventId) {
+        return certificateRepository.existsByParticipantIdAndEventId(participantId, eventId);
+    }
 }
 
 

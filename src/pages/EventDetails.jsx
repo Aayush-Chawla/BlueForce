@@ -47,22 +47,21 @@ const EventDetails = () => {
 
       setCheckingEnrollment(true);
       try {
-        const enrolled = await eventService.isUserEnrolled(event.id, user.id);
-        setIsParticipant(enrolled);
-        
-        // If enrolled, check if waste collection has been submitted
-        if (enrolled) {
-          const participantDetails = await eventService.getParticipantDetails(event.id, user.id);
-          if (participantDetails) {
-            setParticipantDetails(participantDetails);
-            // Check if waste collection has been submitted
-            const hasWasteData = participantDetails.wasteCollectedKg != null && participantDetails.wasteCollectedKg > 0;
-            setHasSubmittedWaste(hasWasteData);
-            console.log(`User ${user.id} waste collection status:`, hasWasteData, participantDetails);
-          }
+        // Check if user is enrolled (including COMPLETED status)
+        const participantDetails = await eventService.getParticipantDetails(event.id, user.id);
+        if (participantDetails) {
+          setIsParticipant(true);
+          setParticipantDetails(participantDetails);
+          // Check if waste collection has been submitted
+          const hasWasteData = participantDetails.wasteCollectedKg != null && participantDetails.wasteCollectedKg > 0;
+          setHasSubmittedWaste(hasWasteData);
+          console.log(`User ${user.id} waste collection status:`, hasWasteData, participantDetails);
+        } else {
+          // Check if user is enrolled (ENROLLED status only)
+          const enrolled = await eventService.isUserEnrolled(event.id, user.id);
+          setIsParticipant(enrolled);
+          console.log(`User ${user.id} enrollment status for event ${event.id}:`, enrolled);
         }
-        
-        console.log(`User ${user.id} enrollment status for event ${event.id}:`, enrolled);
       } catch (error) {
         console.error('Error checking enrollment status:', error);
         setIsParticipant(false);
@@ -320,6 +319,16 @@ const EventDetails = () => {
               <div className="flex items-center gap-2"><Users className="w-4 h-4 text-sky-400" /><span className="block text-gray-500 text-xs">Participants</span><span className="font-medium text-gray-800 ml-1">{event.currentParticipants || 0} / {event.maxParticipants || 0}</span></div>
               {event.estimatedWaste && (
                 <div className="flex items-center gap-2"><Trash2 className="w-4 h-4 text-sky-400" /><span className="block text-gray-500 text-xs">Expected Waste</span><span className="font-medium text-gray-800 ml-1">{event.estimatedWaste} kg</span></div>
+              )}
+              {hasSubmittedWaste && participantDetails && participantDetails.wasteCollectedKg && (
+                <div className="flex items-center gap-2 bg-green-50 p-2 rounded-lg border border-green-200">
+                  <Trash2 className="w-4 h-4 text-green-600" />
+                  <span className="block text-gray-500 text-xs">Your Waste Collected</span>
+                  <span className="font-semibold text-green-700 ml-1">{participantDetails.wasteCollectedKg} kg</span>
+                  {participantDetails.wasteType && (
+                    <span className="text-xs text-gray-500">({participantDetails.wasteType})</span>
+                  )}
+                </div>
               )}
             </div>
             {/* QR Code Modal */}

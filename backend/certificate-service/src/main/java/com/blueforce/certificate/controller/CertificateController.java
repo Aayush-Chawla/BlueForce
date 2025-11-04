@@ -75,6 +75,48 @@ public class CertificateController {
         Certificate saved = certificateService.issue(organizerId, participantId, eventId, templateId, type);
         return ResponseEntity.ok(Map.of("success", true, "message", "Issued", "data", Map.of("id", saved.getId(), "verificationCode", saved.getVerificationCode())));
     }
+
+    // Internal service endpoints for automatic certificate issuance
+    @GetMapping("/internal/templates")
+    public ResponseEntity<?> listTemplatesInternal(@RequestHeader(value = "X-Service-User-Id", required = true) String ownerIdHeader,
+                                                    @RequestParam(value = "page", required = false) Integer page,
+                                                    @RequestParam(value = "limit", required = false) Integer limit) {
+        Long ownerId = Long.parseLong(ownerIdHeader);
+        int p = page != null ? page : 0; int l = limit != null ? limit : 25;
+        Page<CertificateTemplate> result = certificateService.listTemplates(ownerId, p, l);
+        return ResponseEntity.ok(Map.of("success", true, "message", "OK", "data", Map.of(
+                "items", result.getContent(), "total", result.getTotalElements(), "page", p, "limit", l
+        )));
+    }
+
+    @PostMapping("/internal/templates")
+    public ResponseEntity<?> createTemplateInternal(@RequestHeader(value = "X-Service-User-Id", required = true) String ownerIdHeader,
+                                                     @RequestBody Map<String, Object> body) {
+        Long ownerId = Long.parseLong(ownerIdHeader);
+        String name = String.valueOf(body.getOrDefault("name", "Untitled"));
+        String type = String.valueOf(body.getOrDefault("type", "participation"));
+        CertificateTemplate saved = certificateService.createTemplate(ownerId, name, type);
+        return ResponseEntity.ok(Map.of("success", true, "message", "Created", "data", Map.of("id", saved.getId())));
+    }
+
+    @PostMapping("/internal/issue")
+    public ResponseEntity<?> issueInternal(@RequestHeader(value = "X-Service-User-Id", required = true) String organizerIdHeader,
+                                           @RequestBody Map<String, Object> body) {
+        Long organizerId = Long.parseLong(organizerIdHeader);
+        Long participantId = Long.parseLong(String.valueOf(body.get("participantId")));
+        Long eventId = Long.parseLong(String.valueOf(body.get("eventId")));
+        Long templateId = Long.parseLong(String.valueOf(body.get("templateId")));
+        String type = String.valueOf(body.getOrDefault("type", "participation"));
+        Certificate saved = certificateService.issue(organizerId, participantId, eventId, templateId, type);
+        return ResponseEntity.ok(Map.of("success", true, "message", "Issued", "data", Map.of("id", saved.getId(), "verificationCode", saved.getVerificationCode())));
+    }
+
+    @GetMapping("/internal/check")
+    public ResponseEntity<?> checkCertificateExists(@RequestParam("participantId") Long participantId,
+                                                     @RequestParam("eventId") Long eventId) {
+        boolean exists = certificateService.certificateExists(participantId, eventId);
+        return ResponseEntity.ok(Map.of("success", true, "exists", exists));
+    }
 }
 
 
