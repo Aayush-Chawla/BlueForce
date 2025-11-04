@@ -12,6 +12,7 @@ import html2canvas from 'html2canvas';
 import { COLORS } from '../../utils/chartColors';
 import { Download } from 'lucide-react';
 import * as userService from '../../services/userService';
+import { eventService } from '../../services/eventService';
 
 const ParticipantDashboard = () => {
   const { user } = useAuth();
@@ -25,6 +26,8 @@ const ParticipantDashboard = () => {
   const [errors, setErrors] = React.useState({});
   const [apiError, setApiError] = React.useState('');
   const [successMsg, setSuccessMsg] = React.useState('');
+  const [enrolledEvents, setEnrolledEvents] = React.useState([]);
+  const [loadingEnrolledEvents, setLoadingEnrolledEvents] = React.useState(true);
 
   React.useEffect(() => {
     if (user) {
@@ -34,6 +37,49 @@ const ParticipantDashboard = () => {
         address: user.address || ''
       });
     }
+  }, [user]);
+
+  // Fetch user's enrolled events
+  React.useEffect(() => {
+    const fetchEnrolledEvents = async () => {
+      if (!user || user.role !== 'participant') return;
+      
+      setLoadingEnrolledEvents(true);
+      try {
+        // Fetch enrolled event participants
+        const enrolledParticipants = await eventService.getUserEnrolledEvents(user.id);
+        
+        // Fetch full event details for each enrolled event
+        const eventDetailsPromises = enrolledParticipants
+          .filter(ep => ep.status === 'ENROLLED' || ep.status === 'COMPLETED')
+          .map(async (participant) => {
+            try {
+              const eventDetails = await eventService.getEventById(participant.eventId);
+              return {
+                ...eventDetails,
+                enrolledAt: participant.enrolledAt,
+                enrollmentStatus: participant.status,
+                attended: participant.attended
+              };
+            } catch (error) {
+              console.error(`Error fetching event ${participant.eventId}:`, error);
+              return null;
+            }
+          });
+        
+        const eventDetails = await Promise.all(eventDetailsPromises);
+        const validEvents = eventDetails.filter(e => e !== null);
+        
+        setEnrolledEvents(validEvents);
+      } catch (error) {
+        console.error('Error fetching enrolled events:', error);
+        setEnrolledEvents([]);
+      } finally {
+        setLoadingEnrolledEvents(false);
+      }
+    };
+
+    fetchEnrolledEvents();
   }, [user]);
 
   const handleEdit = () => {
@@ -81,12 +127,28 @@ const ParticipantDashboard = () => {
     );
   }
 
-  const userEvents = events.filter(event =>
+  // Use enrolled events from API, fallback to filtered events if API fails
+  const userEvents = enrolledEvents.length > 0 ? enrolledEvents : events.filter(event =>
     event.isUpcoming || event.status === 'COMPLETED'
   );
 
-  const upcomingEvents = userEvents.filter(event => event.isUpcoming);
-  const completedEvents = userEvents.filter(event => event.status === 'COMPLETED');
+  // Determine if event is upcoming based on dateTime
+  const now = new Date();
+  const upcomingEvents = userEvents.filter(event => {
+    if (!event.dateTime) return false;
+    const eventDate = Array.isArray(event.dateTime) 
+      ? new Date(event.dateTime[0], event.dateTime[1] - 1, event.dateTime[2], event.dateTime[3], event.dateTime[4] || 0)
+      : new Date(event.dateTime);
+    return eventDate > now && (event.enrollmentStatus === 'ENROLLED' || event.status === 'ACTIVE');
+  });
+
+  const completedEvents = userEvents.filter(event => {
+    if (!event.dateTime) return event.status === 'COMPLETED';
+    const eventDate = Array.isArray(event.dateTime) 
+      ? new Date(event.dateTime[0], event.dateTime[1] - 1, event.dateTime[2], event.dateTime[3], event.dateTime[4] || 0)
+      : new Date(event.dateTime);
+    return (eventDate < now || event.status === 'COMPLETED') && (event.enrollmentStatus === 'COMPLETED' || event.enrollmentStatus === 'ENROLLED');
+  });
 
   const staticEvents = [
     {
@@ -122,7 +184,7 @@ const ParticipantDashboard = () => {
   ];
 
   const stats = [
-    { icon: Calendar, label: 'Events Joined', value: userEvents.length },
+    { icon: Calendar, label: 'Events Joined', value: enrolledEvents.length || userEvents.length },
     { icon: Trash2, label: 'Waste Collected', value: `${user.totalWasteCollected || 0} kg` },
     { icon: Award, label: 'Eco Score', value: user.ecoScore || 850 },
     { icon: Users, label: 'Community Impact', value: '12.5 tons' }
@@ -278,11 +340,22 @@ const ParticipantDashboard = () => {
         </div>
 
         {/* Upcoming Events */}
-        {upcomingEvents.length > 0 && (
+        {loadingEnrolledEvents ? (
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
               <Clock className="w-6 h-6 mr-2 text-sky-500" />
               Events You're Joining
+            </h2>
+            <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading your events...</p>
+            </div>
+          </div>
+        ) : upcomingEvents.length > 0 ? (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+              <Clock className="w-6 h-6 mr-2 text-sky-500" />
+              Events You're Joining ({upcomingEvents.length})
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {upcomingEvents.map(event => (
@@ -290,14 +363,14 @@ const ParticipantDashboard = () => {
               ))}
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Completed Events */}
-        {completedEvents.length > 0 && (
+        {!loadingEnrolledEvents && completedEvents.length > 0 && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
               <Award className="w-6 h-6 mr-2 text-teal-500" />
-              Events You've Completed
+              Events You've Completed ({completedEvents.length})
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {completedEvents.map(event => (
@@ -319,7 +392,7 @@ const ParticipantDashboard = () => {
         )}
 
         {/* No Events Message */}
-        {userEvents.length === 0 && (
+        {!loadingEnrolledEvents && userEvents.length === 0 && (
           <div className="bg-white rounded-xl shadow-lg p-12 text-center">
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Calendar className="w-12 h-12 text-gray-400" />

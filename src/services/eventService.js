@@ -195,9 +195,57 @@ class EventService {
       });
       if (!response.ok) return false;
       const result = await response.json();
-      return !!result.enrolled || (result === true);
+      // Backend returns Boolean directly
+      if (typeof result === 'boolean') {
+        return result;
+      }
+      // Fallback: check if result has enrolled property
+      return result.enrolled === true;
     } catch (error) {
+      console.error('Error checking enrollment:', error);
       return false;
+    }
+  }
+
+  // Get user's enrolled events
+  async getUserEnrolledEvents(userId) {
+    try {
+      const response = await fetch(`${this.baseURL}/events/user/${userId}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching user enrolled events:', error);
+      throw error;
+    }
+  }
+
+  // Get user's upcoming enrolled events
+  async getUserUpcomingEvents(userId) {
+    try {
+      const response = await fetch(`${this.baseURL}/events/user/${userId}/upcoming`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching user upcoming events:', error);
+      throw error;
+    }
+  }
+
+  // Get user's past enrolled events
+  async getUserPastEvents(userId) {
+    try {
+      const response = await fetch(`${this.baseURL}/events/user/${userId}/past`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching user past events:', error);
+      throw error;
     }
   }
 

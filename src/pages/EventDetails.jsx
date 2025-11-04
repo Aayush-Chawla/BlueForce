@@ -6,13 +6,17 @@ import { useAuth } from '../contexts';
 import QRCode from 'react-qr-code';
 import { QrCode, ArrowLeft, Star, Users, MapPin, Calendar as CalendarIcon, Clock, Waves, Trash2, Share2 } from 'lucide-react';
 import { mockFeedbacks } from '../utils/mockData';
+import { eventService } from '../services/eventService';
 
 const EventDetails = () => {
   const { id } = useParams();
-  const { events, joinEvent, leaveEvent, loading } = useEvents();
+  const { events, joinEvent, leaveEvent, loading, error } = useEvents();
   const { user } = useAuth();
   const [showQR, setShowQR] = useState(false);
   const [feedbackFilter, setFeedbackFilter] = useState('all'); // all, good, bad
+  const [actionLoading, setActionLoading] = useState(false);
+  const [isParticipant, setIsParticipant] = useState(false);
+  const [checkingEnrollment, setCheckingEnrollment] = useState(true);
   const navigate = useNavigate();
   
   // Always call hooks at the top level
@@ -30,6 +34,30 @@ const EventDetails = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
+
+  // Check if user is enrolled in this event
+  useEffect(() => {
+    const checkEnrollment = async () => {
+      if (!user || !event || user.role !== 'participant') {
+        setCheckingEnrollment(false);
+        return;
+      }
+
+      setCheckingEnrollment(true);
+      try {
+        const enrolled = await eventService.isUserEnrolled(event.id, user.id);
+        setIsParticipant(enrolled);
+        console.log(`User ${user.id} enrollment status for event ${event.id}:`, enrolled);
+      } catch (error) {
+        console.error('Error checking enrollment status:', error);
+        setIsParticipant(false);
+      } finally {
+        setCheckingEnrollment(false);
+      }
+    };
+
+    checkEnrollment();
+  }, [user, event?.id]);
 
   // Show loading state while events are being fetched
   if (loading) {
@@ -60,9 +88,8 @@ const EventDetails = () => {
     );
   }
 
-  const isParticipant = false; // We'll need to check this from the backend
-  const canJoin = user && user.role === 'participant' && !isParticipant && (event.currentParticipants || 0) < (event.maxParticipants || 0);
-  const canLeave = user && user.role === 'participant' && isParticipant;
+  const canJoin = user && user.role === 'participant' && !isParticipant && !checkingEnrollment && (event.currentParticipants || 0) < (event.maxParticipants || 0);
+  const canLeave = user && user.role === 'participant' && isParticipant && !checkingEnrollment;
 
   const qrData = user && event ? JSON.stringify({
     userId: user?.id,
@@ -182,18 +209,46 @@ const EventDetails = () => {
               <div className="flex gap-2">
                 {canJoin && (
                   <button
-                    onClick={() => joinEvent(event.id, user?.id)}
-                    className="px-5 py-2 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 transition-all font-semibold shadow"
+                    onClick={async () => {
+                      setActionLoading(true);
+                      try {
+                        await joinEvent(event.id, user?.id);
+                        // Update enrollment status immediately
+                        setIsParticipant(true);
+                        alert('Successfully joined the event!');
+                      } catch (error) {
+                        console.error('Error joining event:', error);
+                        alert(error.message || 'Failed to join event. Please try again.');
+                      } finally {
+                        setActionLoading(false);
+                      }
+                    }}
+                    disabled={actionLoading}
+                    className="px-5 py-2 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 transition-all font-semibold shadow disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Join Event
+                    {actionLoading ? 'Joining...' : 'Join Event'}
                   </button>
                 )}
                 {canLeave && (
                   <button
-                    onClick={() => leaveEvent(event.id, user?.id)}
-                    className="px-5 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors font-semibold shadow"
+                    onClick={async () => {
+                      setActionLoading(true);
+                      try {
+                        await leaveEvent(event.id, user?.id);
+                        // Update enrollment status immediately
+                        setIsParticipant(false);
+                        alert('Successfully left the event!');
+                      } catch (error) {
+                        console.error('Error leaving event:', error);
+                        alert(error.message || 'Failed to leave event. Please try again.');
+                      } finally {
+                        setActionLoading(false);
+                      }
+                    }}
+                    disabled={actionLoading}
+                    className="px-5 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors font-semibold shadow disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Leave Event
+                    {actionLoading ? 'Leaving...' : 'Leave Event'}
                   </button>
                 )}
                 {isParticipant && (

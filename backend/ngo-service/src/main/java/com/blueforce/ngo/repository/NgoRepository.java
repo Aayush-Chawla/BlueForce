@@ -14,3 +14,4 @@ public interface NgoRepository extends JpaRepository<Ngo, Long> {
 
 
 
+
