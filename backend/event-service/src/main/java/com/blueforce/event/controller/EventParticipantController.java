@@ -71,9 +71,10 @@ public class EventParticipantController {
     @GetMapping("/{eventId}/participants")
     public ResponseEntity<?> getParticipants(@PathVariable Long eventId) {
         try {
-            var roster = eventParticipantService.getParticipantRoster(eventId);
-            return ResponseEntity.ok(java.util.Map.of("success", true, "participants", roster));
+            List<EventParticipantResponse> participants = eventParticipantService.getEventParticipants(eventId);
+            return ResponseEntity.ok(java.util.Map.of("success", true, "participants", participants));
         } catch (Exception ex) {
+            log.error("Error fetching participants for event {}: {}", eventId, ex.getMessage(), ex);
             return ResponseEntity.status(400).body(java.util.Map.of("success", false, "message", ex.getMessage()));
         }
     }
