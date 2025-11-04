@@ -6,7 +6,7 @@ const ImpactDashboard = ({ users, events, totalWasteCollected }) => {
     .filter(u => u.role === 'ngo')
     .map(ngo => ({
       ...ngo,
-      eventsCreated: events.filter(e => e.organizer.id === ngo.id).length
+      eventsCreated: events.filter(e => e.organizer && e.organizer.id === ngo.id).length
     }))
     .sort((a, b) => b.eventsCreated - a.eventsCreated)
     .slice(0, 5);

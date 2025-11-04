@@ -27,7 +27,7 @@ public class UserService {
         }
 
         return switch (role) {
-            case "ADMIN" -> new AdminProfileDto(
+            case "SUPERADMIN", "ADMIN" -> new AdminProfileDto(
                     user.getId(), user.getEmail(), user.getRole(),
                     user.getName(), user.getPhone(), user.getAvatar(), user.getBio()
             );
@@ -51,7 +51,7 @@ public class UserService {
         String role = user.getRole() == null ? "" : user.getRole().toUpperCase();
         if ("VOLUNTEER".equals(role)) role = "PARTICIPANT";
         return switch (role) {
-            case "ADMIN" -> new AdminProfileDto(
+            case "SUPERADMIN", "ADMIN" -> new AdminProfileDto(
                     user.getId(), user.getEmail(), user.getRole(),
                     user.getName(), user.getPhone(), user.getAvatar(), user.getBio()
             );
@@ -138,6 +138,7 @@ public class UserService {
         if (role != null) {
             String r = role.trim().toLowerCase();
             filterRole = switch (r) {
+                case "superadmin", "super_admin", "super admin" -> "SUPERADMIN";
                 case "admin" -> "ADMIN";
                 case "ngo", "organizer" -> "NGO";
                 case "participant", "volunteer" -> "PARTICIPANT";
@@ -163,7 +164,7 @@ public class UserService {
             if ("VOLUNTEER".equals(thisRole)) thisRole = "PARTICIPANT";
             
             return switch (thisRole) {
-                case "ADMIN" -> new AdminProfileDto(
+                case "SUPERADMIN", "ADMIN" -> new AdminProfileDto(
                         user.getId(), user.getEmail(), user.getRole(),
                         user.getName(), user.getPhone(), user.getAvatar(), user.getBio()
                 );

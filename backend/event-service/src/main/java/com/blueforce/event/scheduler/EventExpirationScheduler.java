@@ -17,7 +17,7 @@ public class EventExpirationScheduler {
     
     private final EventService eventService;
     
-  
+
     @Scheduled(cron = "0 0 * * * ?")
     public void expireEventsAutomatically() {
         try {

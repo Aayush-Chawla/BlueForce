@@ -22,6 +22,13 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    // Prevent registration of super admin email
+    if (formData.email.toLowerCase() === 'admin@blueforce.com') {
+      setError('This email is reserved and cannot be registered');
+      return;
+    }
+    
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;

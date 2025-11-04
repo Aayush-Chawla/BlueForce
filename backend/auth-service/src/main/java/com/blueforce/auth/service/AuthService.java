@@ -36,11 +36,21 @@ public class AuthService {
     // ✅ Register
     public AuthResponse register(RegisterRequest request) {
 
+        // Prevent registration of super admin email
+        if ("admin@blueforce.com".equalsIgnoreCase(request.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This email is reserved and cannot be registered");
+        }
+
         if (authUserRepository.existsByEmail(request.getEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
         }
 
         String normalizedRole = normalizeRole(request.getRole());
+        
+        // Prevent registration with superadmin role
+        if ("superadmin".equalsIgnoreCase(normalizedRole)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Super admin role cannot be assigned during registration");
+        }
 
         AuthUser authUser = AuthUser.builder()
                 .email(request.getEmail())
@@ -115,6 +125,7 @@ public class AuthService {
         if (role == null) return "participant";
         String r = role.trim().toLowerCase();
         return switch (r) {
+            case "superadmin", "super_admin", "super admin" -> "superadmin";
             case "admin" -> "admin";
             case "ngo", "organizer" -> "ngo";
             case "participant", "volunteer" -> "participant";

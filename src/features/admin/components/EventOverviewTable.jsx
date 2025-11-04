@@ -6,10 +6,18 @@ const EventOverviewTable = ({ events }) => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  const filteredEvents = events.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.organizer.name.toLowerCase().includes(searchTerm.toLowerCase());
+  // Ensure events is an array and filter with safe property access
+  const filteredEvents = (Array.isArray(events) ? events : []).filter(event => {
+    if (!event) return false;
+    
+    const title = event.title || '';
+    const location = event.location || '';
+    const organizerName = event.organizer?.name || '';
+    const searchLower = searchTerm.toLowerCase();
+    
+    const matchesSearch = title.toLowerCase().includes(searchLower) ||
+                         location.toLowerCase().includes(searchLower) ||
+                         organizerName.toLowerCase().includes(searchLower);
     const matchesStatus = statusFilter === 'all' || event.status === statusFilter;
     
     return matchesSearch && matchesStatus;
@@ -26,11 +34,16 @@ const EventOverviewTable = ({ events }) => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    if (!dateString) return 'Date not specified';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      return 'Invalid date';
+    }
   };
 
   return (
@@ -115,10 +128,10 @@ const EventOverviewTable = ({ events }) => {
                         }}
                       />
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{event.title}</div>
+                        <div className="text-sm font-medium text-gray-900">{event.title || 'Untitled Event'}</div>
                         <div className="text-sm text-gray-500 flex items-center">
                           <MapPin className="w-3 h-3 mr-1" />
-                          {event.location}
+                          {event.location || 'Location not specified'}
                         </div>
                       </div>
                     </div>
@@ -126,8 +139,8 @@ const EventOverviewTable = ({ events }) => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <img
-                        src={event.organizer.avatar || 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400'}
-                        alt={event.organizer.name}
+                        src={event.organizer?.avatar || 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400'}
+                        alt={event.organizer?.name || 'Unknown Organizer'}
                         className="w-8 h-8 rounded-full object-cover"
                         onError={e => {
                           const fallback = 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400';
@@ -138,7 +151,7 @@ const EventOverviewTable = ({ events }) => {
                         }}
                       />
                       <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">{event.organizer.name}</div>
+                        <div className="text-sm font-medium text-gray-900">{event.organizer?.name || 'Unknown Organizer'}</div>
                       </div>
                     </div>
                   </td>
@@ -147,25 +160,25 @@ const EventOverviewTable = ({ events }) => {
                       <Calendar className="w-4 h-4 mr-2 text-gray-400" />
                       <div>
                         <div>{formatDate(event.date)}</div>
-                        <div className="text-xs text-gray-500">{event.time}</div>
+                        <div className="text-xs text-gray-500">{event.time || 'Time not specified'}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div className="flex items-center">
                       <Users className="w-4 h-4 mr-2 text-gray-400" />
-                      {event.participants.length}/{event.maxParticipants}
+                      {Array.isArray(event.participants) ? event.participants.length : 0}/{event.maxParticipants || 0}
                     </div>
                     {(event.actualWaste || event.estimatedWaste) && (
                       <div className="flex items-center text-xs text-gray-500 mt-1">
                         <Trash2 className="w-3 h-3 mr-1" />
-                        {event.actualWaste || event.estimatedWaste} kg
+                        {(event.actualWaste || event.estimatedWaste || 0)} kg
                       </div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(event.status)}`}>
-                      {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(event.status || 'unknown')}`}>
+                      {event.status ? (event.status.charAt(0).toUpperCase() + event.status.slice(1)) : 'Unknown'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -217,24 +230,24 @@ const EventOverviewTable = ({ events }) => {
                 
                 <div className="space-y-4">
                   <div>
-                    <h4 className="text-xl font-semibold text-gray-800">{selectedEvent.title}</h4>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mt-2 ${getStatusColor(selectedEvent.status)}`}>
-                      {selectedEvent.status.charAt(0).toUpperCase() + selectedEvent.status.slice(1)}
+                    <h4 className="text-xl font-semibold text-gray-800">{selectedEvent.title || 'Untitled Event'}</h4>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mt-2 ${getStatusColor(selectedEvent.status || 'unknown')}`}>
+                      {selectedEvent.status ? (selectedEvent.status.charAt(0).toUpperCase() + selectedEvent.status.slice(1)) : 'Unknown'}
                     </span>
                   </div>
                   
                   <div className="space-y-2">
                     <div className="flex items-center text-gray-600">
                       <Calendar className="w-4 h-4 mr-2" />
-                      <span>{formatDate(selectedEvent.date)} at {selectedEvent.time}</span>
+                      <span>{formatDate(selectedEvent.date)} {selectedEvent.time ? `at ${selectedEvent.time}` : ''}</span>
                     </div>
                     <div className="flex items-center text-gray-600">
                       <MapPin className="w-4 h-4 mr-2" />
-                      <span>{selectedEvent.location}</span>
+                      <span>{selectedEvent.location || 'Location not specified'}</span>
                     </div>
                     <div className="flex items-center text-gray-600">
                       <Users className="w-4 h-4 mr-2" />
-                      <span>{selectedEvent.participants.length}/{selectedEvent.maxParticipants} participants</span>
+                      <span>{Array.isArray(selectedEvent.participants) ? selectedEvent.participants.length : 0}/{selectedEvent.maxParticipants || 0} participants</span>
                     </div>
                     {(selectedEvent.actualWaste || selectedEvent.estimatedWaste) && (
                       <div className="flex items-center text-gray-600">
@@ -250,15 +263,15 @@ const EventOverviewTable = ({ events }) => {
               
               <div className="mt-6">
                 <h5 className="font-semibold text-gray-800 mb-2">Description</h5>
-                <p className="text-gray-600">{selectedEvent.description}</p>
+                <p className="text-gray-600">{selectedEvent.description || 'No description available'}</p>
               </div>
               
               <div className="mt-6">
                 <h5 className="font-semibold text-gray-800 mb-2">Organizer</h5>
                 <div className="flex items-center">
                   <img
-                    src={selectedEvent.organizer.avatar || 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400'}
-                    alt={selectedEvent.organizer.name}
+                    src={selectedEvent.organizer?.avatar || 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400'}
+                    alt={selectedEvent.organizer?.name || 'Unknown Organizer'}
                     className="w-10 h-10 rounded-full object-cover"
                     onError={e => {
                       const fallback = 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400';
@@ -269,21 +282,21 @@ const EventOverviewTable = ({ events }) => {
                     }}
                   />
                   <div className="ml-3">
-                    <div className="text-sm font-medium text-gray-900">{selectedEvent.organizer.name}</div>
-                    <div className="text-sm text-gray-500">{selectedEvent.organizer.email}</div>
+                    <div className="text-sm font-medium text-gray-900">{selectedEvent.organizer?.name || 'Unknown Organizer'}</div>
+                    <div className="text-sm text-gray-500">{selectedEvent.organizer?.email || 'No email'}</div>
                   </div>
                 </div>
               </div>
               
-              {selectedEvent.participants.length > 0 && (
+              {Array.isArray(selectedEvent.participants) && selectedEvent.participants.length > 0 && (
                 <div className="mt-6">
                   <h5 className="font-semibold text-gray-800 mb-2">Participants ({selectedEvent.participants.length})</h5>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {selectedEvent.participants.map((participant) => (
-                      <div key={participant.id} className="flex items-center text-sm">
+                    {selectedEvent.participants.filter(p => p).map((participant) => (
+                      <div key={participant.id || Math.random()} className="flex items-center text-sm">
                         <img
                           src={participant.avatar || 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400'}
-                          alt={participant.name}
+                          alt={participant.name || 'Participant'}
                           className="w-6 h-6 rounded-full object-cover"
                           onError={e => {
                             const fallback = 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400';
@@ -293,7 +306,7 @@ const EventOverviewTable = ({ events }) => {
                             }
                           }}
                         />
-                        <span className="ml-2 text-gray-700">{participant.name}</span>
+                        <span className="ml-2 text-gray-700">{participant.name || 'Unknown'}</span>
                       </div>
                     ))}
                   </div>

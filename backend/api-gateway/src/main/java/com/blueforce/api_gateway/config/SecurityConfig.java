@@ -31,17 +31,20 @@ public class SecurityConfig {
                 // CORS is handled by CorsWebFilter bean from CorsConfig
                 // Don't use .cors() here to avoid duplicate headers
                 .authorizeExchange(exchanges -> exchanges
-                        // Always allow CORS preflight requests
+                        // Always allow CORS preflight requests FIRST
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Public read endpoints
                         .pathMatchers(HttpMethod.GET, "/api/events/**").permitAll()
                         // Open endpoints from AuthService
                         .pathMatchers("/api/auth/**", "/.well-known/jwks.json").permitAll()
 
-                        // Role-based access for UserService
-                        .pathMatchers("/api/users/me/admin/**").hasRole("ADMIN")
+                        // Role-based access for UserService - more specific paths first
+                        .pathMatchers("/api/users/me/admin/**").hasAnyRole("ADMIN", "SUPERADMIN")
                         .pathMatchers("/api/users/me/ngo/**").hasRole("NGO")
                         .pathMatchers("/api/users/me/participant/**").hasRole("PARTICIPANT")
+                        .pathMatchers("/api/users/me").authenticated()  // Allow any authenticated user to get their own profile
+                        .pathMatchers("/api/users").hasAnyRole("ADMIN", "SUPERADMIN")  // List users endpoint
+                        .pathMatchers("/api/users/**").hasAnyRole("ADMIN", "SUPERADMIN")  // Other user endpoints
 
                         // All other requests require authentication
                         .anyExchange().authenticated()
@@ -61,7 +64,17 @@ public class SecurityConfig {
             String role = jwt.getClaimAsString("role");
             if (role == null) return List.<GrantedAuthority>of();
             if ("VOLUNTEER".equalsIgnoreCase(role)) role = "PARTICIPANT";
-            return List.<GrantedAuthority>of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
+            
+            String normalizedRole = role.toUpperCase();
+            // Grant both SUPERADMIN and ADMIN authorities for superadmin role
+            if ("SUPERADMIN".equals(normalizedRole)) {
+                return List.of(
+                    new SimpleGrantedAuthority("ROLE_SUPERADMIN"),
+                    new SimpleGrantedAuthority("ROLE_ADMIN")
+                );
+            }
+            
+            return List.<GrantedAuthority>of(new SimpleGrantedAuthority("ROLE_" + normalizedRole));
         });
         return new ReactiveJwtAuthenticationConverterAdapter(delegate);
     }
