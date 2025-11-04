@@ -19,6 +19,7 @@ import ChatHelpCenter from './pages/ChatHelpCenter';
 import EventDetails from './pages/EventDetails';
 import NGODashboard from './pages/ngo/NGODashboard';
 import NGOCertificates from './pages/ngo/NGOCertificates';
+import NGOPostSubmissions from './pages/ngo/NGOPostSubmissions';
 import ParticipantDashboard from './pages/participant/ParticipantDashboard';
 import ParticipantCertificates from './pages/participant/ParticipantCertificates';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -149,6 +150,11 @@ const AppContent = () => {
             </NGORoute>
           } />
           <Route path="/certificates" element={<CertificatesRoute />} />
+          <Route path="/post-submissions" element={
+            <NGORoute>
+              <NGOPostSubmissions />
+            </NGORoute>
+          } />
           
           {/* Super Admin Routes */}
           <Route path="/admin" element={

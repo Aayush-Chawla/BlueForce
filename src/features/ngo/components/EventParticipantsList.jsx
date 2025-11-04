@@ -133,7 +133,42 @@ const EventParticipantsList = ({ eventId }) => {
                     </div>
                   )}
                   
-                  {participant.wasteCollectionImageUrl && (
+                  {/* Display base64 image if available */}
+                  {participant.imageBase64 && (
+                    <div className="mt-2">
+                      <div className="relative">
+                        <img
+                          src={`data:image/jpeg;base64,${participant.imageBase64}`}
+                          alt="Waste collection"
+                          className="w-full max-w-xs h-32 object-cover rounded-lg border border-gray-300 cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => {
+                            // Open image in new tab
+                            const newWindow = window.open();
+                            if (newWindow) {
+                              newWindow.document.write(`
+                                <html>
+                                  <head><title>Waste Collection Image</title></head>
+                                  <body style="margin:0;padding:20px;background:#f5f5f5;display:flex;justify-content:center;align-items:center;min-height:100vh;">
+                                    <img src="data:image/jpeg;base64,${participant.imageBase64}" style="max-width:100%;max-height:90vh;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.1);" />
+                                  </body>
+                                </html>
+                              `);
+                            }
+                          }}
+                        />
+                        <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                          Click to enlarge
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <ImageIcon className="w-3 h-3" />
+                        Waste collection image
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Fallback to image URL if base64 not available */}
+                  {!participant.imageBase64 && participant.wasteCollectionImageUrl && (
                     <div className="mt-2">
                       <a
                         href={participant.wasteCollectionImageUrl}

@@ -30,6 +30,12 @@ const NgoNav = ({ isActive }) => {
         Certificates
       </Link>
       <Link
+        to="/post-submissions"
+        className={`text-gray-600 hover:text-sky-600 transition-colors ${isActive('/post-submissions') ? 'text-sky-600 font-semibold' : ''}`}
+      >
+        Submissions
+      </Link>
+      <Link
         to="/create-event"
         className={`inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 transition-all transform hover:scale-105 text-sm ${isActive('/create-event') ? 'ring-2 ring-offset-2 ring-sky-300' : ''}`}
       >

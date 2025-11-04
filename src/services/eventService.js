@@ -316,9 +316,10 @@ class EventService {
       // Submit waste collection to backend
       const payload = {
         wasteCollected: wasteData.wasteCollected,
-        wasteType: wasteData.wasteType || 'mixed',
+        wasteType: wasteData.wasteType || 'Not-Recognized',
         notes: wasteData.notes || null,
-        imageUrl: imageUrl // This will be null if upload failed or no image provided
+        imageUrl: imageUrl, // This will be null if upload failed or no image provided
+        imageBase64: wasteData.imageBase64 || null // Include base64 image for database storage
       };
       
       console.log('Submitting waste collection with payload:', { ...payload, imageUrl: imageUrl ? 'present' : 'null' });
