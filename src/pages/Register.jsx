@@ -31,10 +31,37 @@ const Register = () => {
       return;
     }
     try {
-      await register(formData);
-      navigate('/dashboard');
+      console.log('Submitting registration form:', { ...formData, password: '***', confirmPassword: '***' });
+      const result = await register(formData);
+      console.log('Registration successful:', result);
+      
+      // If registration includes a token (mock fallback), go to dashboard
+      // Otherwise, redirect to login since backend registration doesn't return a token
+      if (result.token) {
+        navigate('/dashboard');
+      } else {
+        // Show success message and redirect to login
+        setError('');
+        alert('Registration successful! Please log in with your credentials.');
+        navigate('/login');
+      }
     } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
+      console.error('Registration error:', err);
+      console.error('Error details:', err.message, err.status, err.response);
+      // Handle specific error cases
+      if (err.status === 409) {
+        setError('This email is already registered. Please use a different email or try logging in.');
+      } else if (err.status === 503) {
+        setError('Auth service is unavailable. Please ensure the auth-service is running and registered with Eureka. Check backend services and try again.');
+      } else if (err.status === 400) {
+        // Use backend error message if available
+        const backendMessage = err.response?.error || err.response?.message || err.message;
+        setError(backendMessage || 'Invalid registration data. Please check all fields and try again.');
+      } else if (err.status === 0 || err.message.includes('Failed to fetch')) {
+        setError('Unable to connect to server. Please check your internet connection and ensure all backend services are running.');
+      } else {
+        setError(err.message || 'Registration failed. Please check your connection and try again.');
+      }
     }
   };
 

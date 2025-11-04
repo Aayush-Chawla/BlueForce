@@ -75,7 +75,7 @@ public class AuthService {
             authUserRepository.save(user);
         }
 
-        String token = jwtUtil.generateToken(user.getEmail(), normalizedRole);
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), normalizedRole);
         return LoginResponse.builder()
             .message("Login successful")
             .token(token)

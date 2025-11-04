@@ -97,57 +97,70 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     setIsLoading(true);
     try {
+      console.log('Calling authService.register with:', { ...userData, password: '***' });
       const data = await authService.register(userData);
-      // Register no longer yields token; leave user logged out or optionally auto-login.
+      console.log('Registration successful, user data:', data.user);
+      // Registration successful - user is stored but no token yet
+      // User should log in after registration
       setUser(data.user);
       setIsLoading(false);
       return data;
     } catch (error) {
-      console.log('Real auth service failed, using mock registration:', error.message);
+      console.error('Real auth service failed:', error.message);
+      console.error('Error details:', error);
       
-      // Fallback to mock registration for development
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const savedUsers = localStorage.getItem('beachCleanupRegisteredUsers');
-      const registeredUsers = savedUsers ? JSON.parse(savedUsers) : [];
-      const allUsers = [...mockUsers, ...registeredUsers];
-      const existingUser = allUsers.find(u => u.email === userData.email);
-      
-      if (existingUser) {
+      // Only fallback to mock if it's a network/server error, not validation errors
+      if (error.status === 0 || error.message.includes('Failed to fetch') || error.message.includes('Network')) {
+        console.log('Network error detected, using mock registration fallback');
+        
+        // Fallback to mock registration for development
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const savedUsers = localStorage.getItem('beachCleanupRegisteredUsers');
+        const registeredUsers = savedUsers ? JSON.parse(savedUsers) : [];
+        const allUsers = [...mockUsers, ...registeredUsers];
+        const existingUser = allUsers.find(u => u.email === userData.email);
+        
+        if (existingUser) {
+          setIsLoading(false);
+          throw new Error('User with this email already exists');
+        }
+        
+        const newUser = {
+          id: Date.now().toString(),
+          name: userData.name || '',
+          email: userData.email || '',
+          role: userData.role || 'participant',
+          bio: userData.bio,
+          location: userData.location,
+          eventsJoined: 0,
+          eventsOrganized: 0,
+          totalWasteCollected: 0,
+          ecoScore: 0
+        };
+        
+        // Generate a mock JWT token for development
+        const mockToken = btoa(JSON.stringify({ 
+          sub: newUser.id.toString(), 
+          user_id: newUser.id.toString(),
+          role: newUser.role,
+          email: newUser.email 
+        }));
+        
+        // Save to registered users list
+        const updatedRegisteredUsers = [...registeredUsers, newUser];
+        localStorage.setItem('beachCleanupRegisteredUsers', JSON.stringify(updatedRegisteredUsers));
+        
+        // Set as current user
+        localStorage.setItem('authToken', mockToken);
+        setUser(newUser);
+        localStorage.setItem('beachCleanupUser', JSON.stringify(newUser));
         setIsLoading(false);
-        throw new Error('User with this email already exists');
+        return { user: newUser, token: mockToken };
+      } else {
+        // Re-throw validation/backend errors
+        setIsLoading(false);
+        throw error;
       }
-      
-      const newUser = {
-        id: Date.now().toString(),
-        name: userData.name || '',
-        email: userData.email || '',
-        role: userData.role || 'participant',
-        bio: userData.bio,
-        location: userData.location,
-        eventsJoined: 0,
-        eventsOrganized: 0,
-        totalWasteCollected: 0,
-        ecoScore: 0
-      };
-      
-      // Generate a mock JWT token for development
-      const mockToken = btoa(JSON.stringify({ 
-        sub: newUser.id.toString(), 
-        user_id: newUser.id.toString(),
-        role: newUser.role,
-        email: newUser.email 
-      }));
-      
-      // Save to registered users list
-      const updatedRegisteredUsers = [...registeredUsers, newUser];
-      localStorage.setItem('beachCleanupRegisteredUsers', JSON.stringify(updatedRegisteredUsers));
-      
-      // Set as current user
-      localStorage.setItem('authToken', mockToken);
-      setUser(newUser);
-      localStorage.setItem('beachCleanupUser', JSON.stringify(newUser));
-      setIsLoading(false);
-      return { user: newUser, token: mockToken };
     }
   };
 

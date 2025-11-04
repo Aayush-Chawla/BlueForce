@@ -22,11 +22,15 @@ const PostEventFeedback = () => {
     e.preventDefault();
     if (rating < 1 || !feedback.trim()) return;
     try {
-      await feedbackService.submit({ eventId, rating, feedback });
+      console.log('Submitting feedback:', { eventId, rating, feedback });
+      const result = await feedbackService.submit({ eventId, rating, feedback });
+      console.log('Feedback submitted successfully:', result);
       setSubmitted(true);
       setTimeout(() => navigate('/dashboard'), 2000);
     } catch (err) {
-      alert(err.message || 'Failed to submit feedback');
+      console.error('Error submitting feedback:', err);
+      console.error('Error details:', err.message, err.status, err.response);
+      alert(err.message || 'Failed to submit feedback. Please check your connection and try again.');
     }
   };
 

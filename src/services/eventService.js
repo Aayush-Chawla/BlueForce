@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:9090/api';
+// Use relative path so Vite dev proxy forwards to backend without CORS
+const API_BASE_URL = '/api';
 
 class EventService {
   constructor() {
@@ -33,7 +34,10 @@ class EventService {
         method: 'GET',
         headers: this.getAuthHeaders()
       });
-      return await this.handleResponse(response);
+      const json = await this.handleResponse(response);
+      // Backend returns { success: true, events: [...], total: X, page: Y, size: Z }
+      // Extract the events array from the response
+      return json.events || json || [];
     } catch (error) {
       console.error('Error fetching events:', error);
       throw error;
@@ -57,12 +61,25 @@ class EventService {
   // Create new event with imageUrl
   async createEvent(eventData) {
     try {
+      console.log('Sending event creation request:', eventData);
       const response = await fetch(`${this.baseURL}/events`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify(eventData)
       });
-      return await this.handleResponse(response);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Event creation failed:', response.status, errorData);
+        const error = new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        error.status = response.status;
+        error.response = errorData;
+        throw error;
+      }
+      
+      const result = await response.json();
+      console.log('Event creation response:', result);
+      return result;
     } catch (error) {
       console.error('Error creating event:', error);
       throw error;

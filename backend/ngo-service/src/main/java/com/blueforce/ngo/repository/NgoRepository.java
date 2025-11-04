@@ -10,3 +10,7 @@ public interface NgoRepository extends JpaRepository<Ngo, Long> {
     Page<Ngo> findByOwnerUserId(Long ownerUserId, Pageable pageable);
 }
 
+
+
+
+

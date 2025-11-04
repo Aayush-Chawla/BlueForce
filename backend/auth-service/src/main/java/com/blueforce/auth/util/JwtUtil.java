@@ -26,9 +26,11 @@ public class JwtUtil {
 
     private final long EXPIRATION_TIME = 1000 * 60 * 60; // 1 hour
 
-    public String generateToken(String email, String role) {
+    public String generateToken(Long userId, String email, String role) {
         return Jwts.builder()
-                .setSubject(email)
+                .setSubject(String.valueOf(userId)) // store numeric ID in sub
+                .claim("user_id", String.valueOf(userId))
+                .claim("email", email)
                 .claim("role", role)
                 .setIssuer("blueforce-auth-service")
                 .setIssuedAt(new Date())
@@ -48,6 +50,10 @@ public class JwtUtil {
     }
 
     public String extractEmail(String token) {
+        // Email is stored as a custom claim now
+        String email = extractClaims(token).get("email", String.class);
+        if (email != null) return email;
+        // Fallback to subject if older tokens are in circulation
         return extractClaims(token).getSubject();
     }
 
