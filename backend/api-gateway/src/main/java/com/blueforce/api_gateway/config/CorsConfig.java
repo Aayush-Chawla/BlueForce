@@ -16,17 +16,17 @@ public class CorsConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
         
-        // Allow frontend origin
-        corsConfig.setAllowedOrigins(Arrays.asList(
+        // Allow frontend origin - use setAllowedOriginPatterns when allowCredentials is true
+        corsConfig.setAllowedOriginPatterns(Arrays.asList(
             "http://localhost:5173",  // Vite default port
             "http://localhost:3000",   // React default port
             "http://localhost:5174"     // Alternative Vite port
         ));
         
         // Allow all methods (GET, POST, PUT, DELETE, OPTIONS, etc.)
-        corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
         
-        // Allow all headers
+        // Allow all headers including Authorization
         corsConfig.setAllowedHeaders(Arrays.asList("*"));
         
         // Allow credentials (cookies, authorization headers, etc.)
@@ -36,7 +36,9 @@ public class CorsConfig {
         corsConfig.setExposedHeaders(Arrays.asList(
             "Authorization",
             "Content-Type",
-            "X-Total-Count"
+            "X-Total-Count",
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Credentials"
         ));
         
         // Cache preflight requests for 1 hour

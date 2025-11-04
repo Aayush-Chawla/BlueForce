@@ -53,7 +53,17 @@ public class SecurityConfig {
             String role = jwt.getClaimAsString("role");
             if (role == null) return List.<GrantedAuthority>of();
             if ("VOLUNTEER".equalsIgnoreCase(role)) role = "PARTICIPANT";
-            return List.<GrantedAuthority>of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
+            
+            String normalizedRole = role.toUpperCase();
+            // Grant both SUPERADMIN and ADMIN authorities for superadmin role
+            if ("SUPERADMIN".equals(normalizedRole)) {
+                return List.of(
+                    new SimpleGrantedAuthority("ROLE_SUPERADMIN"),
+                    new SimpleGrantedAuthority("ROLE_ADMIN")
+                );
+            }
+            
+            return List.<GrantedAuthority>of(new SimpleGrantedAuthority("ROLE_" + normalizedRole));
         });
         return converter;
     }

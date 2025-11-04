@@ -137,6 +137,12 @@ export const AuthProvider = ({ children }) => {
       if (error.status === 0 || error.message.includes('Failed to fetch') || error.message.includes('Network')) {
         console.log('Network error detected, using mock registration fallback');
         
+        // Prevent registration of super admin email
+        if (userData.email && userData.email.toLowerCase() === 'admin@blueforce.com') {
+          setIsLoading(false);
+          throw new Error('This email is reserved and cannot be registered');
+        }
+        
         // Fallback to mock registration for development
         await new Promise(resolve => setTimeout(resolve, 1000));
         const savedUsers = localStorage.getItem('beachCleanupRegisteredUsers');

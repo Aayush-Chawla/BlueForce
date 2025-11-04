@@ -8,9 +8,16 @@ const UserManagementTable = ({ users }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userStatuses, setUserStatuses] = useState({});
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+  // Ensure users is an array and filter with safe property access
+  const filteredUsers = (Array.isArray(users) ? users : []).filter(user => {
+    if (!user) return false;
+    
+    const name = user.name || '';
+    const email = user.email || '';
+    const searchLower = searchTerm.toLowerCase();
+    
+    const matchesSearch = name.toLowerCase().includes(searchLower) ||
+                         email.toLowerCase().includes(searchLower);
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     const userStatus = userStatuses[user.id] !== undefined ? userStatuses[user.id] : true;
     const matchesStatus = statusFilter === 'all' || 
@@ -131,10 +138,10 @@ const UserManagementTable = ({ users }) => {
                           }}
                         />
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                          <div className="text-sm font-medium text-gray-900">{user.name || 'Unknown User'}</div>
                           <div className="text-sm text-gray-500 flex items-center">
                             <Mail className="w-3 h-3 mr-1" />
-                            {user.email}
+                            {user.email || 'No email'}
                           </div>
                           {user.location && (
                             <div className="text-xs text-gray-400 flex items-center mt-1">
@@ -233,8 +240,8 @@ const UserManagementTable = ({ users }) => {
                     }}
                   />
                   <div>
-                    <h4 className="text-xl font-semibold text-gray-800">{selectedUser.name}</h4>
-                    <p className="text-gray-600">{selectedUser.email}</p>
+                    <h4 className="text-xl font-semibold text-gray-800">{selectedUser.name || 'Unknown User'}</h4>
+                    <p className="text-gray-600">{selectedUser.email || 'No email'}</p>
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mt-2 ${
                       selectedUser.role === 'ngo' 
                         ? 'bg-amber-100 text-amber-800' 
