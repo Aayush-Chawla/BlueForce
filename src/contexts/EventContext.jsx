@@ -19,8 +19,10 @@ export const EventProvider = ({ children }) => {
   const { user } = useAuth();
 
   // Load events from API
-  const loadEvents = async () => {
-    setLoading(true);
+  const loadEvents = async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const eventsData = await eventService.getEvents();
@@ -31,7 +33,9 @@ export const EventProvider = ({ children }) => {
       // Fallback to empty array if API fails
       setEvents([]);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -108,7 +112,8 @@ export const EventProvider = ({ children }) => {
   };
 
   const joinEvent = async (eventId, userId) => {
-    setLoading(true);
+    // Don't set global loading - this blocks the entire UI
+    // Instead, we'll just refresh events silently after joining
     setError(null);
     try {
       console.log('Attempting to join event:', eventId, 'for user:', userId);
@@ -128,8 +133,8 @@ export const EventProvider = ({ children }) => {
       const result = await eventService.enrollInEvent(eventId, enrollmentData);
       console.log('Join event result:', result);
       
-      // Refresh the events to get updated participant count
-      await loadEvents();
+      // Refresh the events to get updated participant count (silently, without blocking UI)
+      await loadEvents(false);
       
       return result;
     } catch (err) {
@@ -154,13 +159,11 @@ export const EventProvider = ({ children }) => {
       }
       
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
   const leaveEvent = async (eventId, userId) => {
-    setLoading(true);
+    // Don't set global loading - this blocks the entire UI
     setError(null);
     try {
       console.log('Leaving event:', eventId, 'for user:', userId);
@@ -176,8 +179,8 @@ export const EventProvider = ({ children }) => {
       // Use the simplified cancelEnrollment method that extracts user ID from JWT
       await eventService.cancelEnrollment(eventId);
       
-      // Refresh the events to get updated participant count
-      await loadEvents();
+      // Refresh the events to get updated participant count (silently, without blocking UI)
+      await loadEvents(false);
       
       console.log('Successfully left event');
     } catch (err) {
@@ -198,8 +201,6 @@ export const EventProvider = ({ children }) => {
       }
       
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 

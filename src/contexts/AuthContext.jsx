@@ -26,12 +26,36 @@ export const AuthProvider = ({ children }) => {
           });
           const json = await resp.json();
           if (resp.ok && json?.success && json?.data) {
-            const u = {
+            // First set basic user info from validate endpoint
+            let u = {
               id: json.data.userId,
               email: json.data.email,
               role: json.data.role,
               verified: json.data.verified
             };
+            
+            // Try to fetch full user profile to get name and other details
+            try {
+              const profileResp = await fetch('http://localhost:9090/api/users/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              if (profileResp.ok) {
+                const profileData = await profileResp.json();
+                // Merge profile data with basic user info
+                u = {
+                  ...u,
+                  name: profileData.name || u.name,
+                  phone: profileData.phone || u.phone,
+                  avatar: profileData.avatar || u.avatar,
+                  bio: profileData.bio || u.bio,
+                  address: profileData.address || u.address
+                };
+              }
+            } catch (profileError) {
+              console.log('Could not fetch user profile, using basic info:', profileError);
+              // Continue with basic user info if profile fetch fails
+            }
+            
             setUser(u);
             localStorage.setItem('beachCleanupUser', JSON.stringify(u));
           } else {
