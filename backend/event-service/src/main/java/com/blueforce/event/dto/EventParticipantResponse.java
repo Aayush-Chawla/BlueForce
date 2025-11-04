@@ -18,8 +18,15 @@ public class EventParticipantResponse {
     private LocalDateTime enrolledAt;
     private EventParticipant.ParticipationStatus status;
     private Boolean attended;
+    private LocalDateTime attendedAt;
     private String feedback;
     private Integer rating;
+    
+    // Waste collection fields
+    private Double wasteCollectedKg;
+    private String wasteType;
+    private String wasteCollectionNotes;
+    private String wasteCollectionImageUrl;
     
     // Additional fields for display
     private String userName; // Will be populated from user service
@@ -33,6 +40,11 @@ public class EventParticipantResponse {
         response.setEnrolledAt(participant.getEnrolledAt());
         response.setStatus(participant.getStatus());
         response.setAttended(participant.getAttended());
+        response.setAttendedAt(participant.getAttendedAt());
+        response.setWasteCollectedKg(participant.getWasteCollectedKg());
+        response.setWasteType(participant.getWasteType());
+        response.setWasteCollectionNotes(participant.getWasteCollectionNotes());
+        response.setWasteCollectionImageUrl(participant.getWasteCollectionImageUrl());
         return response;
     }
 }

@@ -39,6 +39,21 @@ public class EventParticipant {
     @Column(name = "attended")
     private Boolean attended;
     
+    @Column(name = "waste_collected_kg")
+    private Double wasteCollectedKg;
+    
+    @Column(name = "waste_type")
+    private String wasteType;
+    
+    @Column(name = "waste_collection_notes", columnDefinition = "TEXT")
+    private String wasteCollectionNotes;
+    
+    @Column(name = "waste_collection_image_url")
+    private String wasteCollectionImageUrl;
+    
+    @Column(name = "attended_at")
+    private LocalDateTime attendedAt;
+    
     // Relationship with Event (for JPA queries)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id", insertable = false, updatable = false)

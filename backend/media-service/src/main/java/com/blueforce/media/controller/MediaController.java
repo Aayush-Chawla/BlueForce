@@ -15,7 +15,7 @@ import java.util.UUID;
 public class MediaController {
 
     @PostMapping("/upload")
-    @PreAuthorize("hasAnyRole('ADMIN','NGO')")
+    @PreAuthorize("hasAnyRole('ADMIN','NGO','PARTICIPANT')")
     public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file) {
         log.info("Uploading file: {}, size: {} bytes", file.getOriginalFilename(), file.getSize());
         
