@@ -26,6 +26,8 @@ class AuthService {
   // Login user
   async login(email, password) {
     try {
+      console.log('Logging in user:', email);
+      
       const response = await fetch(`${this.baseURL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -33,11 +35,29 @@ class AuthService {
         },
         body: JSON.stringify({ email, password })
       });
-      const data = await this.handleResponse(response);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Login failed:', response.status, errorData);
+        // Extract error message from response
+        const errorMessage = errorData.error || errorData.message || `HTTP error! status: ${response.status}`;
+        const error = new Error(errorMessage);
+        error.status = response.status;
+        error.response = errorData;
+        throw error;
+      }
+
+      const data = await response.json();
+      console.log('Login response:', { ...data, token: data.token ? '***' : undefined });
+      
       // Store token and user data
       if (data.token) {
         localStorage.setItem('authToken', data.token);
+        console.log('Auth token stored successfully');
+      } else {
+        console.warn('No token received in login response');
       }
+      
       // Compose user object from returned fields
       const user = {
         id: data.userId,
@@ -46,6 +66,8 @@ class AuthService {
         verified: data.verified
       };
       localStorage.setItem('beachCleanupUser', JSON.stringify(user));
+      console.log('User data stored:', { ...user });
+      
       return { user, token: data.token };
     } catch (error) {
       console.error('Error logging in:', error);
@@ -56,14 +78,38 @@ class AuthService {
   // Register user
   async register(userData) {
     try {
+      // Backend RegisterRequest only accepts: email, password, role
+      // Map frontend data to backend format
+      const registerPayload = {
+        email: userData.email,
+        password: userData.password,
+        role: userData.role || 'participant' // Default to participant if not provided
+      };
+
+      console.log('Registering user with payload:', { ...registerPayload, password: '***' });
+
       const response = await fetch(`${this.baseURL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(userData)
+        body: JSON.stringify(registerPayload)
       });
-      const data = await this.handleResponse(response);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Registration failed:', response.status, errorData);
+        // Extract error message from response
+        const errorMessage = errorData.error || errorData.message || `HTTP error! status: ${response.status}`;
+        const error = new Error(errorMessage);
+        error.status = response.status;
+        error.response = errorData;
+        throw error;
+      }
+
+      const data = await response.json();
+      console.log('Registration response:', data);
+      
       // For registration, AuthResponse returns userId, email, role, verified but not token
       const user = {
         id: data.userId,

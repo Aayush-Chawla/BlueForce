@@ -15,10 +15,25 @@ const Login = () => {
     e.preventDefault();
     setError('');
     try {
+      console.log('Submitting login form:', { email, password: '***' });
       await login(email, password);
+      console.log('Login successful');
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Invalid email or password');
+      console.error('Login error:', err);
+      console.error('Error details:', err.message, err.status, err.response);
+      // Handle specific error cases
+      if (err.status === 401) {
+        // Use the actual error message from backend if available
+        const backendMessage = err.response?.error || err.message;
+        setError(backendMessage || 'Invalid email or password. Please check your credentials and try again.');
+      } else if (err.status === 503) {
+        setError('Auth service is unavailable. Please ensure the auth-service is running and registered with Eureka. Check backend services and try again.');
+      } else if (err.status === 0 || err.message.includes('Failed to fetch')) {
+        setError('Unable to connect to server. Please check your internet connection and ensure the backend is running.');
+      } else {
+        setError(err.message || 'Login failed. Please try again.');
+      }
     }
   };
 

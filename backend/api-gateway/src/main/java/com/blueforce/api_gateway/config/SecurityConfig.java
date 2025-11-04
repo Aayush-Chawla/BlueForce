@@ -14,6 +14,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter;
+import org.springframework.http.HttpMethod;
 import reactor.core.publisher.Mono;
 import java.util.List;
 
@@ -27,7 +28,13 @@ public class SecurityConfig {
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                // CORS is handled by CorsWebFilter bean from CorsConfig
+                // Don't use .cors() here to avoid duplicate headers
                 .authorizeExchange(exchanges -> exchanges
+                        // Always allow CORS preflight requests
+                        .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Public read endpoints
+                        .pathMatchers(HttpMethod.GET, "/api/events/**").permitAll()
                         // Open endpoints from AuthService
                         .pathMatchers("/api/auth/**", "/.well-known/jwks.json").permitAll()
 
@@ -73,6 +80,10 @@ public class SecurityConfig {
                 // UserService route
                 .route("user-service", r -> r.path("/api/users/**")
                         .uri("lb://user-service")
+                )
+                // CertificateService route
+                .route("certificate-service", r -> r.path("/api/certificates/**")
+                        .uri("lb://certificate-service")
                 )
                 .build();
     }

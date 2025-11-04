@@ -54,12 +54,18 @@ export const EventProvider = ({ children }) => {
         contactPhone: eventData.contactPhone || user?.phone
       };
 
+      console.log('Creating event with data:', apiEventData);
       const newEvent = await eventService.createEvent(apiEventData);
-      setEvents(prevEvents => [...prevEvents, newEvent]);
+      console.log('Event created successfully:', newEvent);
+      
+      // Refresh the events list from the backend to ensure we have the latest data
+      await loadEvents();
+      
       return newEvent;
     } catch (err) {
       console.error('Error creating event:', err);
-      setError(err.message);
+      console.error('Error details:', err.message, err.status, err.response);
+      setError(err.message || 'Failed to create event. Please check your connection and try again.');
       throw err;
     } finally {
       setLoading(false);

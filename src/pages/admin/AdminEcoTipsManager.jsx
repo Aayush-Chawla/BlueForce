@@ -83,16 +83,29 @@ const AdminEcoTipsManager = () => {
   };
 
   const handleSave = async () => {
-    if (isCreating) {
-      const created = await ecoTipsService.createTip(formData);
-      setTips([...tips, created]);
-      setIsCreating(false);
-    } else if (editingTip) {
-      const updated = await ecoTipsService.updateTip(editingTip, formData);
-      setTips(tips.map(t => (t.id === editingTip ? updated : t)));
-      setEditingTip(null);
+    try {
+      if (isCreating) {
+        console.log('Creating eco tip with data:', formData);
+        const created = await ecoTipsService.createTip(formData);
+        console.log('Eco tip created:', created);
+        // Refresh the list to get the latest data from backend
+        const resp = await ecoTipsService.listTips({ page: 0, limit: 100 });
+        setTips(resp.items || []);
+        setIsCreating(false);
+      } else if (editingTip) {
+        console.log('Updating eco tip:', editingTip, 'with data:', formData);
+        const updated = await ecoTipsService.updateTip(editingTip, formData);
+        console.log('Eco tip updated:', updated);
+        // Refresh the list to get the latest data from backend
+        const resp = await ecoTipsService.listTips({ page: 0, limit: 100 });
+        setTips(resp.items || []);
+        setEditingTip(null);
+      }
+      setFormData({ title: '', content: '', category: 'waste-reduction', difficulty: 'easy', impact: 'medium' });
+    } catch (err) {
+      console.error('Error saving eco tip:', err);
+      alert(err.message || 'Failed to save eco tip. Please try again.');
     }
-    setFormData({ title: '', content: '', category: 'waste-reduction', difficulty: 'easy', impact: 'medium' });
   };
 
   const handleCancel = () => {
@@ -109,8 +122,15 @@ const AdminEcoTipsManager = () => {
 
   const handleDelete = async (tipId) => {
     if (confirm('Are you sure you want to delete this eco tip?')) {
-      await ecoTipsService.deleteTip(tipId);
-      setTips(tips.filter(tip => tip.id !== tipId));
+      try {
+        await ecoTipsService.deleteTip(tipId);
+        // Refresh the list to get the latest data from backend
+        const resp = await ecoTipsService.listTips({ page: 0, limit: 100 });
+        setTips(resp.items || []);
+      } catch (err) {
+        console.error('Error deleting eco tip:', err);
+        alert(err.message || 'Failed to delete eco tip. Please try again.');
+      }
     }
   };
 
