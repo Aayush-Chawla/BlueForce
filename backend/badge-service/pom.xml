@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.2.5</version>
+    <version>3.5.7</version>
     <relativePath/>
   </parent>
   <groupId>com.blueforce</groupId>
@@ -14,7 +14,7 @@
   <name>badge-service</name>
   <properties>
     <java.version>17</java.version>
-    <spring-cloud.version>2023.0.5</spring-cloud.version>
+    <spring-cloud.version>2025.0.0</spring-cloud.version>
     <lombok.version>1.18.38</lombok.version>
   </properties>
   <dependencies>
