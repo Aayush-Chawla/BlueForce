@@ -1,7 +1,0 @@
-com\blueforce\ngo\NgoServiceApplication.class
-com\blueforce\ngo\config\SecurityConfig.class
-com\blueforce\ngo\controller\HealthController.class
-com\blueforce\ngo\controller\NgoController.class
-com\blueforce\ngo\repository\NgoRepository.class
-com\blueforce\ngo\model\Ngo$NgoBuilder.class
-com\blueforce\ngo\model\Ngo.class

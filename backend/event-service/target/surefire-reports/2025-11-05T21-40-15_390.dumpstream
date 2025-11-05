@@ -1,5 +1,0 @@
-# Created at 2025-11-05T21:40:15.888
-Boot Manifest-JAR contains absolute paths in classpath 'E:\CAPSTONE\BlueForce\backend\event-service\target\test-classes'
-Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
-'other' has different root
-
