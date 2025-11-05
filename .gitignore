@@ -26,3 +26,9 @@ dist-ssr
 
 
 backend/keys
+
+# Maven build output
+
+target/
+
+*.jar
