@@ -28,7 +28,8 @@ dist-ssr
 backend/keys
 
 # Maven build output
-
 target/
-
+**/target/
 *.jar
+*.jar.original
+*.class
