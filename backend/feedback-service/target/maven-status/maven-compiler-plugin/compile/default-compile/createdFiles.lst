@@ -1,0 +1,6 @@
+com\blueforce\feedback\controller\FeedbackController.class
+com\blueforce\feedback\model\Feedback.class
+com\blueforce\feedback\repository\FeedbackRepository.class
+com\blueforce\feedback\model\Feedback$FeedbackBuilder.class
+com\blueforce\feedback\config\SecurityConfig.class
+com\blueforce\feedback\FeedbackServiceApplication.class

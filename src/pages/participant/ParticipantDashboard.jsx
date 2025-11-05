@@ -150,38 +150,15 @@ const ParticipantDashboard = () => {
     return (eventDate < now || event.status === 'COMPLETED') && (event.enrollmentStatus === 'COMPLETED' || event.enrollmentStatus === 'ENROLLED');
   });
 
-  const staticEvents = [
-    {
-      id: 'e456',
-      name: 'Juhu Beach Cleanup',
-      location: 'Juhu Beach, Mumbai',
-      date: '2025-07-28',
-      wasteCollected: 45,
-      volunteers: 32,
-      xpDistributed: 1280,
-      sponsor: 'Acme Corp',
-    },
-    {
-      id: 'e789',
-      name: 'Versova Drive',
-      location: 'Versova Beach, Mumbai',
-      date: '2025-08-01',
-      wasteCollected: 64,
-      volunteers: 50,
-      xpDistributed: 2100,
-      sponsor: 'GreenFuture Ltd',
-    },
-    {
-      id: 'e101',
-      name: 'Marine Lines Cleanup',
-      location: 'Marine Lines, Mumbai',
-      date: '2025-08-15',
-      wasteCollected: 18,
-      volunteers: 15,
-      xpDistributed: 600,
-      sponsor: 'Acme Corp',
-    },
-  ];
+  // Build live analytics from user's real events
+  const analyticsEvents = (completedEvents.length > 0 ? completedEvents : userEvents).map(ev => ({
+    id: ev.id,
+    name: ev.title || ev.name || `Event ${ev.id}`,
+    wasteCollected: Number(ev.wasteCollected || 0),
+    volunteers: Number(ev.currentParticipants || ev.participantCount || 0),
+    // Approximate XP distribution if not provided by backend: 50 XP per volunteer + 5 XP per kg
+    xpDistributed: Number((ev.currentParticipants || ev.participantCount || 0) * 50 + (ev.wasteCollected || 0) * 5),
+  }));
 
   const stats = [
     { icon: Calendar, label: 'Events Joined', value: enrolledEvents.length || userEvents.length },
@@ -428,7 +405,7 @@ const ParticipantDashboard = () => {
             </div>
             <div ref={barChartRef} className="w-full h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={staticEvents} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                <BarChart data={analyticsEvents} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
@@ -458,7 +435,7 @@ const ParticipantDashboard = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={staticEvents}
+                    data={analyticsEvents}
                     dataKey="xpDistributed"
                     nameKey="name"
                     cx="50%"
@@ -466,7 +443,7 @@ const ParticipantDashboard = () => {
                     outerRadius={100}
                     label
                   >
-                    {staticEvents.map((entry, index) => (
+                    {analyticsEvents.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>

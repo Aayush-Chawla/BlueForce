@@ -1,0 +1,8 @@
+com\blueforce\notification\model\Notification.class
+com\blueforce\notification\repository\NotificationRepository.class
+com\blueforce\notification\NotificationServiceApplication.class
+com\blueforce\notification\kafka\NotificationConsumers.class
+com\blueforce\notification\model\Notification$NotificationBuilder.class
+com\blueforce\notification\config\SecurityConfig.class
+com\blueforce\notification\controller\NotificationController.class
+com\blueforce\notification\controller\HealthController.class

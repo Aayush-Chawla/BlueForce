@@ -1,8 +1,10 @@
+E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\client\CertificateServiceClient.java
 E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\config\CorsConfig.java
 E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\config\DevelopmentAuthenticationFilter.java
 E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\config\JacksonConfig.java
 E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\config\JwtTokenExtractor.java
 E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\config\KafkaConfig.java
+E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\config\RestTemplateConfig.java
 E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\config\SecurityConfig.java
 E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\controller\EventController.java
 E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\controller\EventParticipantController.java
@@ -18,5 +20,6 @@ E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\Ev
 E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\exception\GlobalExceptionHandler.java
 E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\repository\EventParticipantRepository.java
 E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\repository\EventRepository.java
+E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\scheduler\EventExpirationScheduler.java
 E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\service\EventParticipantService.java
 E:\CAPSTONE\BlueForce\backend\event-service\src\main\java\com\blueforce\event\service\EventService.java

@@ -1,0 +1,261 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_DATABASE=blueforce
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/ensure_databases.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psecret"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+  eureka-server:
+    build:
+      context: ./backend/eureka-server
+    image: blueforce-eureka:latest
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      - JAVA_OPTS=-Deureka.client.register-with-eureka=false -Deureka.client.fetch-registry=false -Dserver.port=8761
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+    image: blueforce-api-gateway:latest
+    container_name: api-gateway
+    depends_on:
+      eureka-server:
+        condition: service_started
+    ports:
+      - "9090:9090"
+    environment:
+      - JAVA_OPTS=-Deureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka -Dserver.port=9090
+
+  auth-service:
+    build:
+      context: ./backend/auth-service
+    image: blueforce-auth-service:latest
+    container_name: auth-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Deureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka -Dserver.port=8081
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/blueforce_authdb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&autoReconnect=true&failOverReadOnly=false&maxReconnects=10
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=secret
+
+  analytics-service:
+    build:
+      context: ./backend/analytics-service
+    image: blueforce-analytics-service:latest
+    container_name: analytics-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+    environment:
+      - JAVA_OPTS=-Deureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka -Dserver.port=8092
+
+  badge-service:
+    build:
+      context: ./backend/badge-service
+    image: blueforce-badge-service:latest
+    container_name: badge-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Deureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka -Dserver.port=8088
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/blueforce_badgedb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=secret
+
+  certificate-service:
+    build:
+      context: ./backend/certificate-service
+    image: blueforce-certificate-service:latest
+    container_name: certificate-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Deureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka -Dserver.port=8093
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/blueforce_certificatedb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=secret
+
+  chat-service:
+    build:
+      context: ./backend/chat-service
+    image: blueforce-chat-service:latest
+    container_name: chat-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+    environment:
+      - JAVA_OPTS=-Deureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka -Dserver.port=8097
+
+  eco-tips-service:
+    build:
+      context: ./backend/eco-tips-service
+    image: blueforce-eco-tips-service:latest
+    container_name: eco-tips-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+    environment:
+      - JAVA_OPTS=-Deureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka -Dserver.port=8095
+
+  event-service:
+    build:
+      context: ./backend/event-service
+    image: blueforce-event-service:latest
+    container_name: event-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Deureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka -Dserver.port=8083
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/blueforce_eventdb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&autoReconnect=true&failOverReadOnly=false&maxReconnects=10
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=secret
+
+  feedback-service:
+    build:
+      context: ./backend/feedback-service
+    image: blueforce-feedback-service:latest
+    container_name: feedback-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Deureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka -Dserver.port=8094
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/blueforce_feedbackdb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=secret
+
+  leaderboard-service:
+    build:
+      context: ./backend/leaderboard-service
+    image: blueforce-leaderboard-service:latest
+    container_name: leaderboard-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Deureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka -Dserver.port=8087
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/blueforce_leaderboarddb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=secret
+
+  media-service:
+    build:
+      context: ./backend/media-service
+    image: blueforce-media-service:latest
+    container_name: media-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+    environment:
+      - JAVA_OPTS=-Deureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka -Dserver.port=8090
+
+  ngo-service:
+    build:
+      context: ./backend/ngo-service
+    image: blueforce-ngo-service:latest
+    container_name: ngo-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Deureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka -Dserver.port=8091
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/blueforce_ngodb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=secret
+
+  notification-service:
+    build:
+      context: ./backend/notification-service
+    image: blueforce-notification-service:latest
+    container_name: notification-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Deureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka -Dserver.port=8089
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/blueforce_notificationdb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=secret
+
+  storyboard-service:
+    build:
+      context: ./backend/storyboard-service
+    image: blueforce-storyboard-service:latest
+    container_name: storyboard-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+    environment:
+      - JAVA_OPTS=-Deureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka -Dserver.port=8096
+
+  user-service:
+    build:
+      context: ./backend/user-service
+    image: blueforce-user-service:latest
+    container_name: user-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Deureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka -Dserver.port=8082
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/blueforce_userdb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&autoReconnect=true&failOverReadOnly=false&maxReconnects=10
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=secret
+
+  frontend:
+    build:
+      context: .
+    image: blueforce-frontend:latest
+    container_name: blueforce-frontend
+    depends_on:
+      api-gateway:
+        condition: service_started
+    ports:
+      - "80:80"
+
+networks:
+  default:
+    name: blueforce-net
+
+volumes:
+  mysql_data:
+
+
