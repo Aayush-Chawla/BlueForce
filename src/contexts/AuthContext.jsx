@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const token = localStorage.getItem('authToken');
         if (token) {
-          const resp = await fetch('http://localhost:9090/api/auth/validate', {
+          const resp = await fetch('/api/auth/validate', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           const json = await resp.json();
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }) => {
             
             // Try to fetch full user profile to get name and other details
             try {
-              const profileResp = await fetch('http://localhost:9090/api/users/me', {
+              const profileResp = await fetch('/api/users/me', {
                 headers: { 'Authorization': `Bearer ${token}` }
               });
               if (profileResp.ok) {
