@@ -1,0 +1,20 @@
+ {
+   "labels": [
+     "hazardous",
+     "non-hazardous",
+     "dry waste",
+     "wet waste",
+     "recyclable",
+     "organic"
+   ],
+   "prompt_prefix": "a photo of",
+   "label_prompts": {
+     "hazardous": ["hazardous waste", "medical waste", "toxic waste", "chemical waste"],
+     "non-hazardous": ["non hazardous waste", "safe household waste"],
+     "dry waste": ["dry waste", "paper, plastic or metal recyclables", "packaging, cardboard"],
+     "wet waste": ["wet waste", "organic food waste", "kitchen scraps"],
+     "recyclable": ["recyclable materials", "plastic bottles", "paper and cardboard"],
+     "organic": ["organic biodegradable waste", "food scraps", "vegetable peels"]
+   }
+ }
+
