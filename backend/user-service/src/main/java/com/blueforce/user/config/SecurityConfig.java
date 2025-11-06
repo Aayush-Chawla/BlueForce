@@ -46,6 +46,7 @@ public class SecurityConfig {
     }
 
     // Map "role" claim to ROLE_ authorities for method/URL checks
+    // Also set principal name to email claim instead of subject (which contains userId)
     @Bean
     public Converter<Jwt, AbstractAuthenticationToken> jwtAuthConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
@@ -65,6 +66,7 @@ public class SecurityConfig {
             
             return List.<GrantedAuthority>of(new SimpleGrantedAuthority("ROLE_" + normalizedRole));
         });
+        converter.setPrincipalClaimName("email"); // Use email claim as principal name instead of subject
         return converter;
     }
 }

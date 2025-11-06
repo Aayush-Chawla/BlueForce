@@ -18,9 +18,11 @@ public class CorsConfig {
         
         // Allow frontend origin - use setAllowedOriginPatterns when allowCredentials is true
         corsConfig.setAllowedOriginPatterns(Arrays.asList(
-            "http://localhost:5173",  // Vite default port
-            "http://localhost:3000",   // React default port
-            "http://localhost:5174"     // Alternative Vite port
+            "http://localhost",        // Production frontend (port 80)
+            "http://localhost:80",     // Production frontend (explicit port 80)
+            "http://localhost:5173",   // Vite default port
+            "http://localhost:3000",  // React default port
+            "http://localhost:5174"    // Alternative Vite port
         ));
         
         // Allow all methods (GET, POST, PUT, DELETE, OPTIONS, etc.)

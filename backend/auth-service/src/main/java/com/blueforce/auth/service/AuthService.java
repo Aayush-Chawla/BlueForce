@@ -106,6 +106,8 @@ public class AuthService {
                     .provider(authUser.getProvider().name())
                     .build();
 
+            // Use send() with timeout to prevent blocking - fire and forget
+            // If Kafka is unavailable, log the error but don't fail the registration
             CompletableFuture<SendResult<String, UserRegisteredEvent>> future = kafkaTemplate.send("user-registered", event);
             
             future.whenComplete((result, ex) -> {
@@ -113,11 +115,15 @@ public class AuthService {
                     logger.info("Successfully sent user registration event for user: {} with offset: {}", 
                             authUser.getEmail(), result.getRecordMetadata().offset());
                 } else {
-                    logger.error("Failed to send user registration event for user: {}", authUser.getEmail(), ex);
+                    // Log error but don't throw - registration should succeed even if Kafka fails
+                    logger.warn("Failed to send user registration event for user: {}. Event will be lost but registration succeeded.", 
+                            authUser.getEmail(), ex);
                 }
             });
         } catch (Exception e) {
-            logger.error("Error publishing user registration event for user: {}", authUser.getEmail(), e);
+            // Don't fail registration if Kafka publish fails - log and continue
+            logger.warn("Error publishing user registration event for user: {}. Event will be lost but registration succeeded.", 
+                    authUser.getEmail(), e);
         }
     }
 

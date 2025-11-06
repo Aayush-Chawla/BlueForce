@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:9090/api';
+const API_BASE_URL = '/api';
 
 class FeedbackService {
   getAuthHeaders() {
@@ -30,11 +30,11 @@ class FeedbackService {
   }
 
   async list({ eventId, page = 0, limit = 50 } = {}) {
-    const url = new URL(`${API_BASE_URL}/feedback`);
-    if (eventId) url.searchParams.set('eventId', eventId);
-    url.searchParams.set('page', page);
-    url.searchParams.set('limit', limit);
-    const resp = await fetch(url.toString(), { headers: this.getAuthHeaders() });
+    const params = new URLSearchParams();
+    if (eventId) params.set('eventId', eventId);
+    params.set('page', page);
+    params.set('limit', limit);
+    const resp = await fetch(`${API_BASE_URL}/feedback?${params.toString()}`, { headers: this.getAuthHeaders() });
     const json = await this.handleResponse(resp);
     return json.data || { items: [], total: 0, page, limit };
   }

@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8093/api';
+const API_BASE_URL = '/api/certificates';
 
 class CertificateService {
   getAuthHeaders() {
@@ -21,7 +21,7 @@ class CertificateService {
   }
 
   async getTemplates(page = 0, limit = 25) {
-    const resp = await fetch(`${API_BASE_URL}/certificates/templates?page=${page}&limit=${limit}`, {
+    const resp = await fetch(`${API_BASE_URL}/templates?page=${page}&limit=${limit}`, {
       headers: this.getAuthHeaders(),
     });
     const json = await this.handleResponse(resp);
@@ -29,7 +29,7 @@ class CertificateService {
   }
 
   async createTemplate(template) {
-    const resp = await fetch(`${API_BASE_URL}/certificates/templates`, {
+    const resp = await fetch(`${API_BASE_URL}/templates`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(template),
@@ -38,7 +38,7 @@ class CertificateService {
   }
 
   async updateTemplate(id, template) {
-    const resp = await fetch(`${API_BASE_URL}/certificates/templates/${id}`, {
+    const resp = await fetch(`${API_BASE_URL}/templates/${id}`, {
       method: 'PUT',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(template),
@@ -47,7 +47,7 @@ class CertificateService {
   }
 
   async issueCertificate({ participantId, eventId, templateId, type }) {
-    const resp = await fetch(`${API_BASE_URL}/certificates/issue`, {
+    const resp = await fetch(`${API_BASE_URL}/issue`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify({ participantId, eventId, templateId, type }),
@@ -56,7 +56,7 @@ class CertificateService {
   }
 
   async getMyCertificates(participantId, page = 0, limit = 50) {
-    const resp = await fetch(`${API_BASE_URL}/certificates?participantId=${participantId}&page=${page}&limit=${limit}`, {
+    const resp = await fetch(`${API_BASE_URL}?participantId=${participantId}&page=${page}&limit=${limit}`, {
       headers: this.getAuthHeaders(),
     });
     const json = await this.handleResponse(resp);

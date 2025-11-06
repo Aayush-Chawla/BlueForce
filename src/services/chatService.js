@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:9090/api/chat';
+const API_BASE_URL = '/api/chat';
 
 class ChatService {
   getAuthHeaders() {
