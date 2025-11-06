@@ -1,0 +1,17 @@
+# Frontend/node
+node_modules
+npm-debug.log
+dist
+.env
+.env.*
+
+# VCS
+.git
+.gitignore
+
+# OS/editor
+.DS_Store
+*.swp
+*.swo
+
+
