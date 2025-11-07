@@ -16,3 +16,4 @@ public class UserRegisteredEvent {
     private boolean verified;
     private String provider;
 }
+
