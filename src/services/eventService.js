@@ -165,9 +165,32 @@ class EventService {
         method: 'DELETE',
         headers: this.getAuthHeaders()
       });
-      return await this.handleResponse(response);
+      
+      // Handle error responses using handleResponse
+      if (!response.ok) {
+        return await this.handleResponse(response);
+      }
+      
+      // For successful responses, try to parse JSON
+      try {
+        const text = await response.text();
+        if (text && text.trim().length > 0) {
+          return JSON.parse(text);
+        }
+        // If response is empty, return success object
+        return { success: true, message: 'Enrollment cancelled' };
+      } catch (parseError) {
+        // If parsing fails but status was OK, still return success
+        console.warn('Could not parse response JSON, but request was successful:', parseError);
+        return { success: true, message: 'Enrollment cancelled' };
+      }
     } catch (error) {
       console.error('Error canceling enrollment:', error);
+      // Ensure error has proper structure for error handling in EventContext
+      if (!error.status) {
+        error.status = 0;
+        error.response = error.response || { message: error.message || 'Network error or server unavailable' };
+      }
       throw error;
     }
   }

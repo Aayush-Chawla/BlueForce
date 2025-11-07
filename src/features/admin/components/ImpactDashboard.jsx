@@ -1,36 +1,80 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Trophy, Award, Users, Calendar, Trash2, TrendingUp } from 'lucide-react';
+import { isNgoRole, isParticipantRole } from '../../../utils/roleUtils';
 
 const ImpactDashboard = ({ users, events, totalWasteCollected }) => {
-  const topNGOs = users
-    .filter(u => u.role === 'ngo')
-    .map(ngo => ({
-      ...ngo,
-      eventsCreated: events.filter(e => e.organizer && e.organizer.id === ngo.id).length
-    }))
-    .sort((a, b) => b.eventsCreated - a.eventsCreated)
-    .slice(0, 5);
+  // Calculate top NGOs by events created (using ngoId from events)
+  const topNGOs = useMemo(() => {
+    const ngoEventCounts = {};
+    
+    // Count events per NGO
+    events.forEach(event => {
+      if (event.ngoId) {
+        ngoEventCounts[event.ngoId] = (ngoEventCounts[event.ngoId] || 0) + 1;
+      }
+    });
+    
+    // Map to NGO objects with event counts
+    return users
+      .filter(u => isNgoRole(u.role))
+      .map(ngo => ({
+        ...ngo,
+        eventsCreated: ngoEventCounts[ngo.id] || 0,
+        name: ngo.organizationName || ngo.name || ngo.email,
+        location: ngo.address || ngo.location || 'N/A'
+      }))
+      .sort((a, b) => b.eventsCreated - a.eventsCreated)
+      .slice(0, 5);
+  }, [users, events]);
 
-  const topParticipants = users
-    .filter(u => u.role === 'participant')
-    .sort((a, b) => {
-      const aScore = (a.eventsJoined || 0) * 10 + (a.totalWasteCollected || 0);
-      const bScore = (b.eventsJoined || 0) * 10 + (b.totalWasteCollected || 0);
-      return bScore - aScore;
-    })
-    .slice(0, 5);
+  // Calculate top participants (using points or other metrics)
+  const topParticipants = useMemo(() => {
+    return users
+      .filter(u => isParticipantRole(u.role))
+      .map(participant => ({
+        ...participant,
+        name: participant.name || participant.email,
+        location: participant.address || participant.location || 'N/A',
+        points: participant.points || 0
+      }))
+      .sort((a, b) => (b.points || 0) - (a.points || 0))
+      .slice(0, 5);
+  }, [users]);
 
-  const monthlyStats = [
-    { month: 'Jan', events: 12, participants: 180, waste: 45.2 },
-    { month: 'Feb', events: 15, participants: 220, waste: 58.7 },
-    { month: 'Mar', events: 18, participants: 280, waste: 72.1 },
-    { month: 'Apr', events: 22, participants: 340, waste: 89.5 },
-    { month: 'May', events: 25, participants: 380, waste: 95.8 },
-    { month: 'Jun', events: 28, participants: 420, waste: 108.3 }
-  ];
+  // Calculate monthly stats from real events data
+  const monthlyStats = useMemo(() => {
+    const now = new Date();
+    const months = [];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    // Get last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      
+      const monthEvents = events.filter(e => {
+        if (!e.dateTime) return false;
+        const eventDate = new Date(e.dateTime);
+        return eventDate.getFullYear() === date.getFullYear() && 
+               eventDate.getMonth() === date.getMonth();
+      });
+      
+      const monthWaste = monthEvents.reduce((sum, e) => sum + (e.wasteCollected || 0), 0);
+      const monthParticipants = monthEvents.reduce((sum, e) => sum + (e.currentParticipants || 0), 0);
+      
+      months.push({
+        month: monthNames[date.getMonth()],
+        events: monthEvents.length,
+        participants: monthParticipants,
+        waste: monthWaste
+      });
+    }
+    
+    return months;
+  }, [events]);
 
-  const currentMonth = monthlyStats[monthlyStats.length - 1];
-  const previousMonth = monthlyStats[monthlyStats.length - 2];
+  const currentMonth = monthlyStats[monthlyStats.length - 1] || { events: 0, participants: 0, waste: 0 };
+  const previousMonth = monthlyStats[monthlyStats.length - 2] || { events: 0, participants: 0, waste: 0 };
 
   const calculateGrowth = (current, previous) => {
     if (previous === 0) return 0;
@@ -100,7 +144,7 @@ const ImpactDashboard = ({ users, events, totalWasteCollected }) => {
             <h3 className="text-xl font-bold text-gray-800">Top NGOs by Events Created</h3>
           </div>
           <div className="space-y-4">
-            {topNGOs.map((ngo, index) => (
+            {topNGOs.length > 0 ? topNGOs.map((ngo, index) => (
               <div key={ngo.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
@@ -130,7 +174,11 @@ const ImpactDashboard = ({ users, events, totalWasteCollected }) => {
                   <p className="text-sm text-gray-500">events</p>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-8 text-gray-500">
+                No NGOs found
+              </div>
+            )}
           </div>
         </div>
 
@@ -141,7 +189,7 @@ const ImpactDashboard = ({ users, events, totalWasteCollected }) => {
             <h3 className="text-xl font-bold text-gray-800">Top Participants by Impact</h3>
           </div>
           <div className="space-y-4">
-            {topParticipants.map((participant, index) => (
+            {topParticipants.length > 0 ? topParticipants.map((participant, index) => (
               <div key={participant.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
@@ -167,62 +215,88 @@ const ImpactDashboard = ({ users, events, totalWasteCollected }) => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-gray-800">{participant.eventsJoined || 0}</p>
-                  <p className="text-sm text-gray-500">{participant.totalWasteCollected || 0} kg</p>
+                  <p className="font-bold text-gray-800">{participant.points || 0}</p>
+                  <p className="text-sm text-gray-500">points</p>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-8 text-gray-500">
+                No participants found
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Monthly Trend Chart (Simple visualization) */}
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-xl font-bold text-gray-800 mb-6">Monthly Trends</h3>
-        <div className="grid grid-cols-6 gap-4">
-          {monthlyStats.map((stat) => (
-            <div key={stat.month} className="text-center">
-              <div className="mb-2">
-                <div 
-                  className="bg-gradient-to-t from-blue-500 to-blue-300 rounded-t mx-auto"
-                  style={{ 
-                    height: `${(stat.events / Math.max(...monthlyStats.map(s => s.events))) * 100}px`,
-                    width: '20px'
-                  }}
-                />
-                <div 
-                  className="bg-gradient-to-t from-green-500 to-green-300 mx-auto"
-                  style={{ 
-                    height: `${(stat.participants / Math.max(...monthlyStats.map(s => s.participants))) * 80}px`,
-                    width: '20px'
-                  }}
-                />
-                <div 
-                  className="bg-gradient-to-t from-teal-500 to-teal-300 rounded-b mx-auto"
-                  style={{ 
-                    height: `${(stat.waste / Math.max(...monthlyStats.map(s => s.waste))) * 60}px`,
-                    width: '20px'
-                  }}
-                />
-              </div>
-              <p className="text-xs font-medium text-gray-600">{stat.month}</p>
+        <h3 className="text-xl font-bold text-gray-800 mb-6">Monthly Trends (Last 6 Months)</h3>
+        {monthlyStats.length > 0 ? (
+          <>
+            <div className="grid grid-cols-6 gap-4">
+              {monthlyStats.map((stat) => {
+                const maxEvents = Math.max(...monthlyStats.map(s => s.events), 1);
+                const maxParticipants = Math.max(...monthlyStats.map(s => s.participants), 1);
+                const maxWaste = Math.max(...monthlyStats.map(s => s.waste), 1);
+                
+                return (
+                  <div key={stat.month} className="text-center">
+                    <div className="mb-2 flex items-end justify-center h-32">
+                      <div className="flex flex-col items-center gap-1">
+                        <div 
+                          className="bg-gradient-to-t from-blue-500 to-blue-300 rounded-t"
+                          style={{ 
+                            height: `${(stat.events / maxEvents) * 100}px`,
+                            width: '20px',
+                            minHeight: stat.events > 0 ? '4px' : '0px'
+                          }}
+                          title={`${stat.events} events`}
+                        />
+                        <div 
+                          className="bg-gradient-to-t from-green-500 to-green-300"
+                          style={{ 
+                            height: `${(stat.participants / maxParticipants) * 80}px`,
+                            width: '20px',
+                            minHeight: stat.participants > 0 ? '4px' : '0px'
+                          }}
+                          title={`${stat.participants} participants`}
+                        />
+                        <div 
+                          className="bg-gradient-to-t from-teal-500 to-teal-300 rounded-b"
+                          style={{ 
+                            height: `${(stat.waste / maxWaste) * 60}px`,
+                            width: '20px',
+                            minHeight: stat.waste > 0 ? '4px' : '0px'
+                          }}
+                          title={`${stat.waste} kg waste`}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs font-medium text-gray-600">{stat.month}</p>
+                  </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
-        <div className="flex justify-center space-x-6 mt-4">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-blue-500 rounded mr-2" />
-            <span className="text-sm text-gray-600">Events</span>
+            <div className="flex justify-center space-x-6 mt-4">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-blue-500 rounded mr-2" />
+                <span className="text-sm text-gray-600">Events</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-green-500 rounded mr-2" />
+                <span className="text-sm text-gray-600">Participants</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-teal-500 rounded mr-2" />
+                <span className="text-sm text-gray-600">Waste (kg)</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            No event data available for the last 6 months
           </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-500 rounded mr-2" />
-            <span className="text-sm text-gray-600">Participants</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-teal-500 rounded mr-2" />
-            <span className="text-sm text-gray-600">Waste (kg)</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

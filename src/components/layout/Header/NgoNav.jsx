@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, MessageCircle } from 'lucide-react';
 
 const NgoNav = ({ isActive }) => {
   return (
@@ -34,6 +34,13 @@ const NgoNav = ({ isActive }) => {
         className={`text-gray-600 hover:text-sky-600 transition-colors ${isActive('/post-submissions') ? 'text-sky-600 font-semibold' : ''}`}
       >
         Submissions
+      </Link>
+      <Link
+        to="/ngo/chat"
+        className={`text-gray-600 hover:text-sky-600 transition-colors ${isActive('/ngo/chat') ? 'text-sky-600 font-semibold' : ''}`}
+      >
+        <MessageCircle className="w-4 h-4 inline mr-1" />
+        Chat
       </Link>
       <Link
         to="/create-event"

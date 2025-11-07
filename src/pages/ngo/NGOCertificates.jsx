@@ -5,6 +5,7 @@ import { useEvents } from '../../contexts';
 import CertificateTemplate from '../../components/certificate/CertificateTemplate';
 import CertificateEditor from '../../components/certificate/CertificateEditor';
 import { certificateService } from '../../services/certificateService';
+import { eventService } from '../../services/eventService';
 
 const NGOCertificates = () => {
   const { user } = useAuth();
@@ -15,6 +16,8 @@ const NGOCertificates = () => {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [participantsData, setParticipantsData] = useState({}); // eventId -> participants array
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
 
   useEffect(() => {
     const loadTemplates = async () => {
@@ -31,6 +34,42 @@ const NGOCertificates = () => {
     loadTemplates();
   }, []);
 
+  // Fetch participants for all NGO events
+  useEffect(() => {
+    const loadParticipants = async () => {
+      if (!events || !user || user.role !== 'ngo') return;
+      
+      setLoadingParticipants(true);
+      const participantsMap = {};
+      
+      try {
+        // Get all events organized by this NGO
+        const ngoEvents = events.filter(event => event.ngoId === user.id);
+        
+        // Fetch participants for each event
+        for (const event of ngoEvents) {
+          try {
+            const response = await eventService.getEventParticipants(event.id);
+            // Handle both array response and object with participants property
+            const participants = Array.isArray(response) ? response : (response.participants || []);
+            participantsMap[event.id] = participants;
+          } catch (err) {
+            console.error(`Error fetching participants for event ${event.id}:`, err);
+            participantsMap[event.id] = [];
+          }
+        }
+        
+        setParticipantsData(participantsMap);
+      } catch (err) {
+        console.error('Error loading participants:', err);
+      } finally {
+        setLoadingParticipants(false);
+      }
+    };
+    
+    loadParticipants();
+  }, [events, user]);
+
   if (!user || user.role !== 'ngo') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-teal-50 flex items-center justify-center">
@@ -42,19 +81,24 @@ const NGOCertificates = () => {
     );
   }
 
-  // Group participants by their id for all events organized by the NGO
+  // Group participants by their userId for all events organized by the NGO
   const eventParticipants = {};
-  if (events) {
+  if (events && user) {
     events.forEach(event => {
-      if (event.ngoId === user?.id && event.currentParticipants > 0) {
-        // Since we don't have participant data from backend yet, create mock participants
-        for (let i = 0; i < event.currentParticipants; i++) {
-          const participantId = `participant_${event.id}_${i}`;
-          if (!eventParticipants[participantId]) {
-            eventParticipants[participantId] = [];
+      if (event.ngoId === user.id) {
+        const participants = participantsData[event.id] || [];
+        participants.forEach(participant => {
+          const participantId = participant.userId || participant.id;
+          if (participantId) {
+            if (!eventParticipants[participantId]) {
+              eventParticipants[participantId] = {
+                participant: participant,
+                events: []
+              };
+            }
+            eventParticipants[participantId].events.push(event);
           }
-          eventParticipants[participantId].push(event);
-        }
+        });
       }
     });
   }
@@ -198,22 +242,38 @@ const NGOCertificates = () => {
           <div>
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Issue Certificates to Participants</h2>
             
-            {Object.keys(eventParticipants).length > 0 ? (
+            {loadingParticipants ? (
+              <div className="text-center py-12">
+                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Award className="w-12 h-12 text-gray-400 animate-pulse" />
+                </div>
+                <p className="text-gray-600">Loading participants...</p>
+              </div>
+            ) : Object.keys(eventParticipants).length > 0 ? (
               <div className="space-y-6">
-                {Object.entries(eventParticipants).map(([participantId, participantEvents]) => {
-                  const participant = participantEvents[0].participants.find(p => p.id === participantId);
+                {Object.entries(eventParticipants).map(([participantId, data]) => {
+                  const participant = data.participant;
+                  const participantEvents = data.events;
+                  
+                  // Get participant display info
+                  const participantName = participant.userName || participant.name || `Participant ${participantId}`;
+                  const participantEmail = participant.userEmail || participant.email || '';
+                  
                   return (
                     <div key={participantId} className="bg-white rounded-xl shadow-lg p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-4">
-                          <img
-                            src={participant.avatar || 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=400'}
-                            alt={participant.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-sky-500 to-teal-500 flex items-center justify-center text-white font-bold text-lg">
+                            {participantName.charAt(0).toUpperCase()}
+                          </div>
                           <div>
-                            <h3 className="text-lg font-bold text-gray-800">{participant.name}</h3>
-                            <p className="text-gray-600">{participant.email}</p>
+                            <h3 className="text-lg font-bold text-gray-800">{participantName}</h3>
+                            {participantEmail && (
+                              <p className="text-gray-600">{participantEmail}</p>
+                            )}
+                            {participant.userId && (
+                              <p className="text-sm text-gray-500">ID: {participant.userId}</p>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -224,18 +284,30 @@ const NGOCertificates = () => {
                           <div key={event.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div>
                               <p className="font-medium text-gray-800">{event.title}</p>
-                              <p className="text-sm text-gray-600">{new Date(event.date).toLocaleDateString()}</p>
+                              <p className="text-sm text-gray-600">
+                                {event.dateTime ? new Date(event.dateTime).toLocaleDateString() : 
+                                 event.date ? new Date(event.date).toLocaleDateString() : 'Date TBD'}
+                              </p>
+                              {participant.attended && (
+                                <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">
+                                  Attended
+                                </span>
+                              )}
                             </div>
-                            <div className="flex space-x-2">
-                              {templates.map(template => (
-                                <button
-                                  key={template.id}
-                                  onClick={() => handleIssueCertificate(participantId, event.id, template.id)}
-                                  className="px-3 py-1 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 transition-all text-sm"
-                                >
-                                  Issue {template.type}
-                                </button>
-                              ))}
+                            <div className="flex flex-wrap gap-2">
+                              {templates.length > 0 ? (
+                                templates.map(template => (
+                                  <button
+                                    key={template.id}
+                                    onClick={() => handleIssueCertificate(participantId, event.id, template.id)}
+                                    className="px-3 py-1 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 transition-all text-sm whitespace-nowrap"
+                                  >
+                                    Issue {template.type}
+                                  </button>
+                                ))
+                              ) : (
+                                <p className="text-sm text-gray-500">No templates available</p>
+                              )}
                             </div>
                           </div>
                         ))}

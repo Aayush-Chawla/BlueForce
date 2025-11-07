@@ -116,7 +116,10 @@ public class EventParticipantService {
                 .findByEventIdAndUserId(eventId, userId)
                 .orElseThrow(() -> new RuntimeException("Enrollment not found"));
         
-        if (participant.getStatus() != EventParticipant.ParticipationStatus.ENROLLED) {
+        // Allow cancellation for both ENROLLED and COMPLETED statuses
+        // Participants should be able to leave even if they've completed the event
+        if (participant.getStatus() != EventParticipant.ParticipationStatus.ENROLLED 
+            && participant.getStatus() != EventParticipant.ParticipationStatus.COMPLETED) {
             throw new RuntimeException("User is not currently enrolled in this event");
         }
         
@@ -177,7 +180,12 @@ public class EventParticipantService {
     @Transactional(readOnly = true)
     public boolean isUserEnrolled(Long eventId, Long userId) {
         return eventParticipantRepository.findByEventIdAndUserId(eventId, userId)
-                .map(participant -> participant.getStatus() == EventParticipant.ParticipationStatus.ENROLLED)
+                .map(participant -> {
+                    // Consider user enrolled if they have ENROLLED or COMPLETED status
+                    // This allows participants who have completed the event to still leave
+                    return participant.getStatus() == EventParticipant.ParticipationStatus.ENROLLED
+                        || participant.getStatus() == EventParticipant.ParticipationStatus.COMPLETED;
+                })
                 .orElse(false);
     }
     

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { MessageCircle } from 'lucide-react';
 
 const ParticipantNav = ({ isActive }) => {
   return (
@@ -27,6 +28,13 @@ const ParticipantNav = ({ isActive }) => {
         className={`text-gray-600 hover:text-sky-600 transition-colors ${isActive('/certificates') ? 'text-sky-600 font-semibold' : ''}`}
       >
         Certificates
+      </Link>
+      <Link
+        to="/participant/chat"
+        className={`text-gray-600 hover:text-sky-600 transition-colors ${isActive('/participant/chat') ? 'text-sky-600 font-semibold' : ''}`}
+      >
+        <MessageCircle className="w-4 h-4 inline mr-1" />
+        Chat
       </Link>
     </>
   );

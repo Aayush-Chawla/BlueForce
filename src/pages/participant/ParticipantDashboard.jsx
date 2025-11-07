@@ -28,6 +28,8 @@ const ParticipantDashboard = () => {
   const [successMsg, setSuccessMsg] = React.useState('');
   const [enrolledEvents, setEnrolledEvents] = React.useState([]);
   const [loadingEnrolledEvents, setLoadingEnrolledEvents] = React.useState(true);
+  const [chartData, setChartData] = React.useState([]);
+  const [loadingChartData, setLoadingChartData] = React.useState(true);
 
   React.useEffect(() => {
     if (user) {
@@ -45,21 +47,26 @@ const ParticipantDashboard = () => {
       if (!user || user.role !== 'participant') return;
       
       setLoadingEnrolledEvents(true);
+      setLoadingChartData(true);
       try {
         // Fetch enrolled event participants
         const enrolledParticipants = await eventService.getUserEnrolledEvents(user.id);
         
-        // Fetch full event details for each enrolled event
+        // Fetch full event details and participant details for each enrolled event
         const eventDetailsPromises = enrolledParticipants
           .filter(ep => ep.status === 'ENROLLED' || ep.status === 'COMPLETED')
           .map(async (participant) => {
             try {
               const eventDetails = await eventService.getEventById(participant.eventId);
+              // Fetch participant details to get waste collected data
+              const participantDetails = await eventService.getParticipantDetails(participant.eventId, user.id);
+              
               return {
                 ...eventDetails,
                 enrolledAt: participant.enrolledAt,
                 enrollmentStatus: participant.status,
-                attended: participant.attended
+                attended: participant.attended,
+                wasteCollectedKg: participantDetails?.wasteCollectedKg || participant.wasteCollectedKg || null
               };
             } catch (error) {
               console.error(`Error fetching event ${participant.eventId}:`, error);
@@ -71,11 +78,35 @@ const ParticipantDashboard = () => {
         const validEvents = eventDetails.filter(e => e !== null);
         
         setEnrolledEvents(validEvents);
+        
+        // Transform events with waste collected into chart data
+        const completedEventsWithWaste = validEvents.filter(event => 
+          event.wasteCollectedKg != null && event.wasteCollectedKg > 0
+        );
+        
+        const chartDataTransformed = completedEventsWithWaste.map(event => ({
+          id: event.id,
+          name: event.title || event.name || 'Event',
+          location: event.location || 'Unknown',
+          date: event.dateTime ? (
+            Array.isArray(event.dateTime) 
+              ? `${event.dateTime[0]}-${String(event.dateTime[1]).padStart(2, '0')}-${String(event.dateTime[2]).padStart(2, '0')}`
+              : new Date(event.dateTime).toISOString().split('T')[0]
+          ) : 'Unknown',
+          wasteCollected: Math.round(event.wasteCollectedKg * 10) / 10, // Round to 1 decimal
+          volunteers: event.participantCount || 0,
+          xpDistributed: Math.round(event.wasteCollectedKg * 10), // 10 XP per kg
+          sponsor: event.ngoName || 'NGO'
+        }));
+        
+        setChartData(chartDataTransformed);
       } catch (error) {
         console.error('Error fetching enrolled events:', error);
         setEnrolledEvents([]);
+        setChartData([]);
       } finally {
         setLoadingEnrolledEvents(false);
+        setLoadingChartData(false);
       }
     };
 
@@ -150,38 +181,7 @@ const ParticipantDashboard = () => {
     return (eventDate < now || event.status === 'COMPLETED') && (event.enrollmentStatus === 'COMPLETED' || event.enrollmentStatus === 'ENROLLED');
   });
 
-  const staticEvents = [
-    {
-      id: 'e456',
-      name: 'Juhu Beach Cleanup',
-      location: 'Juhu Beach, Mumbai',
-      date: '2025-07-28',
-      wasteCollected: 45,
-      volunteers: 32,
-      xpDistributed: 1280,
-      sponsor: 'Acme Corp',
-    },
-    {
-      id: 'e789',
-      name: 'Versova Drive',
-      location: 'Versova Beach, Mumbai',
-      date: '2025-08-01',
-      wasteCollected: 64,
-      volunteers: 50,
-      xpDistributed: 2100,
-      sponsor: 'GreenFuture Ltd',
-    },
-    {
-      id: 'e101',
-      name: 'Marine Lines Cleanup',
-      location: 'Marine Lines, Mumbai',
-      date: '2025-08-15',
-      wasteCollected: 18,
-      volunteers: 15,
-      xpDistributed: 600,
-      sponsor: 'Acme Corp',
-    },
-  ];
+  // Chart data is now fetched from database - see chartData state
 
   const stats = [
     { icon: Calendar, label: 'Events Joined', value: enrolledEvents.length || userEvents.length },
@@ -419,25 +419,44 @@ const ParticipantDashboard = () => {
                 <Trash2 className="w-4 h-4 mr-2 text-sky-500" />
                 Waste Collected by Event
               </h3>
-              <button
-                onClick={() => exportChart(barChartRef, 'waste_by_event.png')}
-                className="px-3 py-2 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 text-sm flex items-center transition-all transform hover:scale-105"
-              >
-                <Download className="w-4 h-4 mr-1" /> Download
-              </button>
+              {chartData.length > 0 && (
+                <button
+                  onClick={() => exportChart(barChartRef, 'waste_by_event.png')}
+                  className="px-3 py-2 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 text-sm flex items-center transition-all transform hover:scale-105"
+                >
+                  <Download className="w-4 h-4 mr-1" /> Download
+                </button>
+              )}
             </div>
-            <div ref={barChartRef} className="w-full h-[260px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={staticEvents} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="wasteCollected" fill="#0ea5e9" name="Waste Collected (kg)" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {loadingChartData ? (
+              <div className="w-full h-[260px] flex items-center justify-center">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-500 mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-600">Loading chart data...</p>
+                </div>
+              </div>
+            ) : chartData.length === 0 ? (
+              <div className="w-full h-[260px] flex items-center justify-center">
+                <div className="text-center">
+                  <Trash2 className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">No waste collection data available yet</p>
+                  <p className="text-xs text-gray-400 mt-1">Complete events to see your impact here</p>
+                </div>
+              </div>
+            ) : (
+              <div ref={barChartRef} className="w-full h-[260px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="wasteCollected" fill="#0ea5e9" name="Waste Collected (kg)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
 
           {/* Pie Chart */}
@@ -447,34 +466,53 @@ const ParticipantDashboard = () => {
                 <Award className="w-4 h-4 mr-2 text-sky-500" />
                 XP Distribution by Event
               </h3>
-              <button
-                onClick={() => exportChart(pieChartRef, 'xp_distribution.png')}
-                className="px-3 py-2 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 text-sm flex items-center transition-all transform hover:scale-105"
-              >
-                <Download className="w-4 h-4 mr-1" /> Download
-              </button>
+              {chartData.length > 0 && (
+                <button
+                  onClick={() => exportChart(pieChartRef, 'xp_distribution.png')}
+                  className="px-3 py-2 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 text-sm flex items-center transition-all transform hover:scale-105"
+                >
+                  <Download className="w-4 h-4 mr-1" /> Download
+                </button>
+              )}
             </div>
-            <div ref={pieChartRef} className="w-full h-[310px] flex justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={staticEvents}
-                    dataKey="xpDistributed"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    label
-                  >
-                    {staticEvents.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            {loadingChartData ? (
+              <div className="w-full h-[310px] flex items-center justify-center">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-500 mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-600">Loading chart data...</p>
+                </div>
+              </div>
+            ) : chartData.length === 0 ? (
+              <div className="w-full h-[310px] flex items-center justify-center">
+                <div className="text-center">
+                  <Award className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">No XP data available yet</p>
+                  <p className="text-xs text-gray-400 mt-1">Complete events to see your XP distribution</p>
+                </div>
+              </div>
+            ) : (
+              <div ref={pieChartRef} className="w-full h-[310px] flex justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      dataKey="xpDistributed"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      label
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         </div>
       </div>

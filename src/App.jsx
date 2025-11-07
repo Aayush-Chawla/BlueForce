@@ -20,8 +20,10 @@ import EventDetails from './pages/EventDetails';
 import NGODashboard from './pages/ngo/NGODashboard';
 import NGOCertificates from './pages/ngo/NGOCertificates';
 import NGOPostSubmissions from './pages/ngo/NGOPostSubmissions';
+import NGOChat from './pages/ngo/NGOChat';
 import ParticipantDashboard from './pages/participant/ParticipantDashboard';
 import ParticipantCertificates from './pages/participant/ParticipantCertificates';
+import ParticipantChat from './pages/participant/ParticipantChat';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUserManagement from './pages/admin/AdminUserManagement';
 import AdminEventOverview from './pages/admin/AdminEventOverview';
@@ -154,6 +156,16 @@ const AppContent = () => {
             <NGORoute>
               <NGOPostSubmissions />
             </NGORoute>
+          } />
+          <Route path="/ngo/chat" element={
+            <NGORoute>
+              <NGOChat />
+            </NGORoute>
+          } />
+          <Route path="/participant/chat" element={
+            <ParticipantRoute>
+              <ParticipantChat />
+            </ParticipantRoute>
           } />
           
           {/* Super Admin Routes */}

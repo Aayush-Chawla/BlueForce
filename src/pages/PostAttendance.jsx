@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts';
 import { eventService } from '../services/eventService';
+import { mlService } from '../services/mlService';
 import { 
   CheckCircle, 
   Trash2, 
@@ -11,7 +12,9 @@ import {
   ArrowRight,
   Loader2,
   AlertCircle,
-  Leaf
+  Leaf,
+  BarChart3,
+  X
 } from 'lucide-react';
 
 const PostAttendance = () => {
@@ -28,6 +31,10 @@ const PostAttendance = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [mlResults, setMlResults] = useState(null);
+  const [isAnalyzingML, setIsAnalyzingML] = useState(false);
+  const [mlError, setMlError] = useState(null);
+  const [mlSummary, setMlSummary] = useState(null);
   
   const [formData, setFormData] = useState({
     wasteCollected: '',
@@ -202,6 +209,106 @@ const PostAttendance = () => {
       imageBase64: null,
       wasteType: 'Not-Recognized' // Reset to default when image is removed
     }));
+    setMlResults(null);
+    setMlError(null);
+    setMlSummary(null);
+  };
+
+  const generateAISummary = (results) => {
+    const { plastic_percentage, num_objects, num_clusters, avg_cluster_size } = results;
+    
+    let severity = 'low';
+    let severityColor = 'text-green-600';
+    let severityBg = 'bg-green-50';
+    let severityBorder = 'border-green-200';
+    
+    if (plastic_percentage > 20) {
+      severity = 'high';
+      severityColor = 'text-red-600';
+      severityBg = 'bg-red-50';
+      severityBorder = 'border-red-200';
+    } else if (plastic_percentage > 5) {
+      severity = 'medium';
+      severityColor = 'text-yellow-600';
+      severityBg = 'bg-yellow-50';
+      severityBorder = 'border-yellow-200';
+    }
+    
+    let summary = `Analysis Summary:\n\n`;
+    
+    // Main assessment
+    if (plastic_percentage > 20) {
+      summary += `🔴 **High Priority Cleanup Required**: The image shows significant plastic waste contamination with ${plastic_percentage.toFixed(1)}% coverage. `;
+    } else if (plastic_percentage > 5) {
+      summary += `🟡 **Moderate Contamination Detected**: The area shows ${plastic_percentage.toFixed(1)}% plastic coverage, indicating moderate waste accumulation. `;
+    } else if (plastic_percentage > 0) {
+      summary += `🟢 **Low Contamination Level**: Minimal plastic waste detected (${plastic_percentage.toFixed(1)}% coverage). `;
+    } else {
+      summary += `✅ **Clean Area**: No significant plastic waste detected in the analyzed image. `;
+    }
+    
+    // Object detection insights
+    if (num_objects > 0) {
+      summary += `The analysis identified ${num_objects} distinct waste object${num_objects > 1 ? 's' : ''}. `;
+    }
+    
+    // Cluster analysis
+    if (num_clusters > 0) {
+      summary += `Waste is distributed across ${num_clusters} cluster${num_clusters > 1 ? 's' : ''} `;
+      if (num_clusters > 3) {
+        summary += `indicating widespread contamination. `;
+      } else if (num_clusters > 1) {
+        summary += `suggesting localized accumulation zones. `;
+      } else {
+        summary += `showing concentrated waste in one area. `;
+      }
+      
+      if (avg_cluster_size > 0) {
+        summary += `Average cluster size: ${avg_cluster_size.toFixed(1)} objects per cluster. `;
+      }
+    }
+    
+    // Recommendations
+    summary += `\n\n**Recommendations**: `;
+    if (plastic_percentage > 20) {
+      summary += `Immediate cleanup action is recommended. Consider deploying additional resources and implementing targeted collection strategies. `;
+    } else if (plastic_percentage > 5) {
+      summary += `Scheduled cleanup would help prevent further accumulation. Focus on identified cluster areas for efficient collection. `;
+    } else {
+      summary += `Maintain current cleanup efforts. Regular monitoring recommended to prevent accumulation. `;
+    }
+    
+    if (num_clusters > 0 && avg_cluster_size > 2) {
+      summary += `The clustered distribution suggests systematic collection could be effective.`;
+    }
+    
+    return {
+      text: summary,
+      severity,
+      severityColor,
+      severityBg,
+      severityBorder
+    };
+  };
+
+  const handleMLAnalyze = async () => {
+    if (!formData.image) return;
+    
+    setIsAnalyzingML(true);
+    setMlError(null);
+    setMlSummary(null);
+    try {
+      const results = await mlService.analyzeImage(formData.image);
+      setMlResults(results);
+      // Generate AI summary
+      const summary = generateAISummary(results);
+      setMlSummary(summary);
+    } catch (err) {
+      console.error('Error analyzing image with ML model:', err);
+      setMlError(err.message || 'Failed to analyze image. Please make sure the ML service is running on http://localhost:5000');
+    } finally {
+      setIsAnalyzingML(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -488,18 +595,143 @@ const PostAttendance = () => {
                   <button
                     type="button"
                     onClick={removeImage}
-                    disabled={analyzing}
+                    disabled={analyzing || isAnalyzingML}
                     className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Remove image"
                   >
-                    ×
+                    <X className="w-4 h-4" />
                   </button>
+                </div>
+              )}
+              
+              {/* ML Analysis Button */}
+              {formData.imagePreview && !analyzing && (
+                <button
+                  type="button"
+                  onClick={handleMLAnalyze}
+                  disabled={isAnalyzingML}
+                  className="w-full py-3 bg-gradient-to-r from-teal-500 to-sky-500 text-white rounded-lg font-semibold hover:from-teal-600 hover:to-sky-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isAnalyzingML ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Analyzing with ML Model...
+                    </>
+                  ) : (
+                    <>
+                      <BarChart3 className="w-5 h-5" />
+                      Analyze Waste Detection & Density
+                    </>
+                  )}
+                </button>
+              )}
+
+              {/* ML Error */}
+              {mlError && (
+                <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  {mlError}
+                </div>
+              )}
+
+              {/* ML Results Display */}
+              {mlResults && (
+                <div className="mt-4 space-y-4">
+                  {/* AI Summary */}
+                  {mlSummary && (
+                    <div className={`${mlSummary.severityBg} ${mlSummary.severityBorder} border-2 rounded-lg p-4 mb-4`}>
+                      <div className="flex items-start gap-3">
+                        <div className={`${mlSummary.severityColor} text-2xl`}>
+                          {mlSummary.severity === 'high' ? '🔴' : mlSummary.severity === 'medium' ? '🟡' : '🟢'}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+                            <FileText className="w-5 h-5" />
+                            AI Analysis Summary
+                          </h4>
+                          <div className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+                            {mlSummary.text.split('**').map((part, index) => {
+                              if (index % 2 === 1) {
+                                return <strong key={index} className="font-semibold">{part}</strong>;
+                              }
+                              return <span key={index}>{part}</span>;
+                            })}
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <span className={`text-xs font-semibold ${mlSummary.severityColor} uppercase`}>
+                              Priority Level: {mlSummary.severity}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="bg-gradient-to-r from-teal-50 to-sky-50 rounded-lg p-5 border-2 border-teal-300">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5 text-teal-600" />
+                      ML Analysis Results
+                    </h3>
+                    
+                    {/* Statistics */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                      <div className="bg-white p-3 rounded-lg shadow-sm">
+                        <div className="text-xl font-bold text-teal-700">{mlResults.plastic_percentage}%</div>
+                        <div className="text-xs text-gray-600">Plastic Coverage</div>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg shadow-sm">
+                        <div className="text-xl font-bold text-sky-700">{mlResults.num_objects}</div>
+                        <div className="text-xs text-gray-600">Objects Detected</div>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg shadow-sm">
+                        <div className="text-xl font-bold text-blue-700">{mlResults.num_clusters}</div>
+                        <div className="text-xs text-gray-600">Waste Clusters</div>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg shadow-sm">
+                        <div className="text-xl font-bold text-indigo-700">{mlResults.avg_cluster_size}</div>
+                        <div className="text-xs text-gray-600">Avg Cluster Size</div>
+                      </div>
+                    </div>
+
+                    {/* Result Images */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {mlResults.result_image && (
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-700 mb-1">Detection Result</h4>
+                          <img
+                            src={mlService.getImageUrl(mlResults.result_image)}
+                            alt="Detection result"
+                            className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                          />
+                        </div>
+                      )}
+                      {mlResults.heatmap_image && (
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-700 mb-1">Heatmap</h4>
+                          <img
+                            src={mlService.getImageUrl(mlResults.heatmap_image)}
+                            alt="Heatmap"
+                            className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                          />
+                        </div>
+                      )}
+                      {mlResults.density_image && (
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-700 mb-1">Density Map</h4>
+                          <img
+                            src={mlService.getImageUrl(mlResults.density_image)}
+                            alt="Density map"
+                            className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
             <p className="mt-1 text-xs text-gray-500">
-              Upload a photo of the waste you collected (Max 5MB, JPG/PNG). 
-              {analyzing ? ' AI is analyzing the image to detect waste type...' : ' The waste type will be automatically detected when you upload an image.'}
+              Upload a photo of the waste you collected (Max 5MB, JPG/PNG/WEBP). 
+              {analyzing ? ' AI is analyzing the image to detect waste type...' : ' The waste type will be automatically detected when you upload an image. You can also use the ML model to analyze waste detection and density.'}
             </p>
           </div>
 

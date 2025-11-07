@@ -34,56 +34,121 @@ const NGODashboard = () => {
     );
   }
 
-  const userEvents = events.filter(event => event.ngoId === user?.id);
+  const userId = React.useMemo(() => {
+    if (!user?.id) return null;
+    if (typeof user.id === 'string') {
+      const parsed = parseInt(user.id, 10);
+      return Number.isNaN(parsed) ? null : parsed;
+    }
+    return user.id;
+  }, [user?.id]);
+
+  const userEvents = React.useMemo(() => {
+    if (!userId) return [];
+    return events.filter(event => Number(event.ngoId) === Number(userId));
+  }, [events, userId]);
+
   const upcomingEvents = userEvents.filter(event => event.isUpcoming);
   const completedEvents = userEvents.filter(event => event.status === 'COMPLETED');
 
-  const staticEvents = [
-    {
-      id: 'e456',
-      name: 'Juhu Beach Cleanup',
-      location: 'Juhu Beach, Mumbai',
-      date: '2025-07-28',
-      wasteCollected: 45,
-      volunteers: 32,
-      xpDistributed: 1280,
-      sponsor: 'Acme Corp',
-    },
-    {
-      id: 'e789',
-      name: 'Versova Drive',
-      location: 'Versova Beach, Mumbai',
-      date: '2025-08-01',
-      wasteCollected: 64,
-      volunteers: 50,
-      xpDistributed: 2100,
-      sponsor: 'GreenFuture Ltd',
-    },
-    {
-      id: 'e101',
-      name: 'Marine Lines Cleanup',
-      location: 'Marine Lines, Mumbai',
-      date: '2025-08-15',
-      wasteCollected: 18,
-      volunteers: 15,
-      xpDistributed: 600,
-      sponsor: 'Acme Corp',
-    },
-  ];
+  const analyticsData = React.useMemo(() => {
+    if (!userEvents.length) {
+      return {
+        totalEvents: 0,
+        totalParticipants: 0,
+        totalWasteKg: 0,
+        monthlyEvents: [],
+        monthlyParticipants: [],
+        labels: [],
+        completionRate: 0,
+      };
+    }
 
-  // Analytics data for NGOs
-  const ngoAnalytics = {
-    totalEvents: userEvents.length,
-    totalParticipants: userEvents.reduce((total, event) => total + (event.currentParticipants || 0), 0),
-    monthlyEvents: [2, 3, 1, 4, 2, 3], // Mock data for last 6 months
-    monthlyParticipants: [25, 40, 15, 60, 30, 45] // Mock data for last 6 months
-  };
+    const totalParticipants = userEvents.reduce(
+      (total, event) => total + (event.currentParticipants || 0),
+      0
+    );
+
+    const totalWasteKg = userEvents.reduce(
+      (total, event) => total + (event.wasteCollected || 0),
+      0
+    );
+
+    const monthsToShow = 6;
+    const now = new Date();
+    const monthlyBuckets = [];
+
+    for (let i = monthsToShow - 1; i >= 0; i -= 1) {
+      const bucketDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = bucketDate.toLocaleString('default', { month: 'short' });
+      const startOfMonth = new Date(bucketDate.getFullYear(), bucketDate.getMonth(), 1);
+      const endOfMonth = new Date(bucketDate.getFullYear(), bucketDate.getMonth() + 1, 0, 23, 59, 59, 999);
+
+      const eventsInMonth = userEvents.filter(event => {
+        if (!event?.dateTime) return false;
+        const eventDate = new Date(event.dateTime);
+        return eventDate >= startOfMonth && eventDate <= endOfMonth;
+      });
+
+      monthlyBuckets.push({
+        label,
+        events: eventsInMonth.length,
+        participants: eventsInMonth.reduce(
+          (total, event) => total + (event.currentParticipants || 0),
+          0
+        ),
+      });
+    }
+
+    return {
+      totalEvents: userEvents.length,
+      totalParticipants,
+      totalWasteKg,
+      monthlyEvents: monthlyBuckets.map(bucket => bucket.events),
+      monthlyParticipants: monthlyBuckets.map(bucket => bucket.participants),
+      labels: monthlyBuckets.map(bucket => bucket.label),
+      completionRate: userEvents.length
+        ? Math.round((completedEvents.length / userEvents.length) * 100)
+        : 0,
+    };
+  }, [userEvents, completedEvents.length]);
+
+  const wasteChartData = React.useMemo(() => {
+    return userEvents
+      .map(event => ({
+        id: event.id,
+        name: event.title || `Event ${event.id}`,
+        wasteCollected: event.wasteCollected || 0,
+      }))
+      .filter(event => event.wasteCollected > 0);
+  }, [userEvents]);
+
+  const participantChartData = React.useMemo(() => {
+    return userEvents
+      .map(event => ({
+        id: event.id,
+        name: event.title || `Event ${event.id}`,
+        participants: event.currentParticipants || 0,
+      }))
+      .filter(event => event.participants > 0);
+  }, [userEvents]);
+
+  const formatWaste = React.useCallback((value) => {
+    if (!value) return '0 kg';
+    return value >= 1000
+      ? `${(value / 1000).toFixed(1)} tons`
+      : `${value} kg`;
+  }, []);
 
   const stats = [
-    { icon: Calendar, label: 'Events Organized', value: userEvents.length },
-    { icon: Users, label: 'Total Participants', value: userEvents.reduce((total, event) => total + (event.currentParticipants || 0), 0) },
-    { icon: Trash2, label: 'Waste Collected', value: '3.2 tons' },
-    { icon: Award, label: 'Impact Score', value: '95%' }
+    { icon: Calendar, label: 'Events Organized', value: analyticsData.totalEvents },
+    { icon: Users, label: 'Total Participants', value: analyticsData.totalParticipants },
+    { icon: Trash2, label: 'Waste Collected', value: formatWaste(analyticsData.totalWasteKg) },
+    {
+      icon: Award,
+      label: 'Completion Rate',
+      value: analyticsData.totalEvents ? `${analyticsData.completionRate}%` : '—',
+    },
   ];
 
   const exportChart = async (chartRef, filename) => {
@@ -161,7 +226,7 @@ const NGODashboard = () => {
                 Analytics Overview
               </h2>
             </div>
-            <AnalyticsChart data={ngoAnalytics} />
+            <AnalyticsChart data={analyticsData} />
           </div>
         </div>
 
@@ -311,16 +376,25 @@ const NGODashboard = () => {
               </button>
             </div>
             <div ref={barChartRef} className="w-full h-[260px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={staticEvents} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="wasteCollected" fill="#0ea5e9" name="Waste Collected (kg)" />
-                </BarChart>
-              </ResponsiveContainer>
+              {wasteChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={wasteChartData}
+                    margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="wasteCollected" fill="#0ea5e9" name="Waste Collected (kg)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-gray-500">
+                  Waste collection data will appear after events report their cleanup totals.
+                </div>
+              )}
             </div>
           </div>
 
@@ -329,35 +403,41 @@ const NGODashboard = () => {
             <div className="w-full flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800 flex items-center">
                 <Award className="w-4 h-4 mr-2 text-sky-500" />
-                XP Distribution by Event
+                Volunteer Participation by Event
               </h3>
               <button
-                onClick={() => exportChart(pieChartRef, 'xp_distribution.png')}
+                onClick={() => exportChart(pieChartRef, 'volunteer_distribution.png')}
                 className="px-3 py-2 bg-gradient-to-r from-sky-500 to-teal-500 text-white rounded-full hover:from-sky-600 hover:to-teal-600 text-sm flex items-center transition-all transform hover:scale-105"
               >
                 <Download className="w-4 h-4 mr-1" /> Download
               </button>
             </div>
             <div ref={pieChartRef} className="w-full h-[310px] flex justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={staticEvents}
-                    dataKey="xpDistributed"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    label
-                  >
-                    {staticEvents.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              {participantChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={participantChartData}
+                      dataKey="participants"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      label
+                    >
+                      {participantChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-gray-500">
+                  Participation distribution will appear once volunteers join your events.
+                </div>
+              )}
             </div>
           </div>
         </div>

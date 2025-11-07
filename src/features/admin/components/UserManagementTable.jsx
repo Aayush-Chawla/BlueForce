@@ -1,25 +1,73 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Search, Filter, Eye, ToggleLeft, ToggleRight, Mail, MapPin, Calendar, Award } from 'lucide-react';
+import { isNgoRole, isParticipantRole, normalizeRoleForFilter, getRoleDisplayName } from '../../../utils/roleUtils';
 
-const UserManagementTable = ({ users }) => {
+const UserManagementTable = ({ users, events = [] }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
   const [userStatuses, setUserStatuses] = useState({});
 
+  // Calculate event counts for each user
+  const usersWithStats = useMemo(() => {
+    console.log('UserManagementTable - Received users:', users);
+    console.log('UserManagementTable - Users is array?', Array.isArray(users));
+    console.log('UserManagementTable - Users length:', users?.length);
+    
+    if (!users) {
+      console.warn('UserManagementTable - users is null or undefined');
+      return [];
+    }
+    
+    if (!Array.isArray(users)) {
+      console.error('UserManagementTable - users is not an array:', typeof users, users);
+      return [];
+    }
+    
+    if (!Array.isArray(events)) {
+      console.warn('UserManagementTable - events is not an array');
+    }
+    
+    return users.map(user => {
+      if (!user) return null;
+      
+      const userRole = user.role || '';
+      let eventsCreated = 0;
+      let eventsJoined = 0;
+      
+      if (isNgoRole(userRole) && user.id) {
+        // Count events created by this NGO
+        eventsCreated = events.filter(e => e.ngoId === user.id).length;
+      } else if (isParticipantRole(userRole) && user.id) {
+        // For participants, we'd need to check event participants
+        // For now, we'll use points as a metric
+        eventsJoined = 0; // This would require fetching event participants
+      }
+      
+      return {
+        ...user,
+        eventsCreated,
+        eventsJoined,
+        // Normalize role for display and filtering
+        normalizedRole: normalizeRoleForFilter(userRole)
+      };
+    }).filter(Boolean);
+  }, [users, events]);
+
   // Ensure users is an array and filter with safe property access
-  const filteredUsers = (Array.isArray(users) ? users : []).filter(user => {
+  const filteredUsers = usersWithStats.filter(user => {
     if (!user) return false;
     
-    const name = user.name || '';
+    // Get display name (organizationName for NGOs, name for others)
+    const displayName = user.organizationName || user.fullName || user.name || '';
     const email = user.email || '';
     const searchLower = searchTerm.toLowerCase();
     
-    const matchesSearch = name.toLowerCase().includes(searchLower) ||
+    const matchesSearch = displayName.toLowerCase().includes(searchLower) ||
                          email.toLowerCase().includes(searchLower);
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    const userStatus = userStatuses[user.id] !== undefined ? userStatuses[user.id] : true;
+    const matchesRole = roleFilter === 'all' || user.normalizedRole === roleFilter;
+    const userStatus = userStatuses[user.id] !== undefined ? userStatuses[user.id] : (user.active !== false);
     const matchesStatus = statusFilter === 'all' || 
                          (statusFilter === 'active' && userStatus) ||
                          (statusFilter === 'inactive' && !userStatus);
@@ -34,16 +82,33 @@ const UserManagementTable = ({ users }) => {
     }));
   };
 
-  const getUserStatus = (userId) => {
-    return userStatuses[userId] !== undefined ? userStatuses[userId] : true;
+  const getUserStatus = (user) => {
+    // Check if status was manually toggled
+    if (userStatuses[user.id] !== undefined) {
+      return userStatuses[user.id];
+    }
+    // Otherwise use the active field from database (default to true if not set)
+    return user.active !== false;
   };
 
   const formatUserStats = (user) => {
-    if (user.role === 'ngo') {
-      return `${user.eventsOrganized || 0} events organized`;
+    const role = user.normalizedRole || normalizeRoleForFilter(user.role);
+    if (isNgoRole(role)) {
+      return `${user.eventsCreated || 0} events organized`;
     } else {
-      return `${user.eventsJoined || 0} events joined, ${user.totalWasteCollected || 0} kg collected`;
+      return `${user.points || 0} points`;
     }
+  };
+
+  const getDisplayName = (user) => {
+    if (user.organizationName) return user.organizationName;
+    if (user.fullName) return user.fullName;
+    if (user.name) return user.name;
+    return user.email || 'Unknown User';
+  };
+
+  const getDisplayLocation = (user) => {
+    return user.address || user.location || null;
   };
 
   return (
@@ -119,9 +184,16 @@ const UserManagementTable = ({ users }) => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.map((user) => {
-                const isActive = getUserStatus(user.id);
-                return (
+              {filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                    No users found matching your filters.
+                  </td>
+                </tr>
+              ) : (
+                filteredUsers.map((user) => {
+                  const isActive = getUserStatus(user);
+                  return (
                   <tr key={user.id} className={`hover:bg-gray-50 ${!isActive ? 'opacity-60' : ''}`}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -138,15 +210,15 @@ const UserManagementTable = ({ users }) => {
                           }}
                         />
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{user.name || 'Unknown User'}</div>
+                          <div className="text-sm font-medium text-gray-900">{getDisplayName(user)}</div>
                           <div className="text-sm text-gray-500 flex items-center">
                             <Mail className="w-3 h-3 mr-1" />
                             {user.email || 'No email'}
                           </div>
-                          {user.location && (
+                          {getDisplayLocation(user) && (
                             <div className="text-xs text-gray-400 flex items-center mt-1">
                               <MapPin className="w-3 h-3 mr-1" />
-                              {user.location}
+                              {getDisplayLocation(user)}
                             </div>
                           )}
                         </div>
@@ -154,11 +226,13 @@ const UserManagementTable = ({ users }) => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.role === 'ngo' 
+                        isNgoRole(user.normalizedRole) 
                           ? 'bg-amber-100 text-amber-800' 
-                          : 'bg-blue-100 text-blue-800'
+                          : isParticipantRole(user.normalizedRole)
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-800'
                       }`}>
-                        {user.role === 'ngo' ? 'NGO' : 'Participant'}
+                        {getRoleDisplayName(user.role || user.normalizedRole)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -204,7 +278,8 @@ const UserManagementTable = ({ users }) => {
                     </td>
                   </tr>
                 );
-              })}
+                })
+              )}
             </tbody>
           </table>
         </div>
@@ -240,14 +315,16 @@ const UserManagementTable = ({ users }) => {
                     }}
                   />
                   <div>
-                    <h4 className="text-xl font-semibold text-gray-800">{selectedUser.name || 'Unknown User'}</h4>
+                    <h4 className="text-xl font-semibold text-gray-800">{getDisplayName(selectedUser)}</h4>
                     <p className="text-gray-600">{selectedUser.email || 'No email'}</p>
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mt-2 ${
-                      selectedUser.role === 'ngo' 
+                      isNgoRole(selectedUser.normalizedRole || selectedUser.role) 
                         ? 'bg-amber-100 text-amber-800' 
-                        : 'bg-blue-100 text-blue-800'
+                        : isParticipantRole(selectedUser.normalizedRole || selectedUser.role)
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-800'
                     }`}>
-                      {selectedUser.role === 'ngo' ? 'NGO' : 'Participant'}
+                      {getRoleDisplayName(selectedUser.role || selectedUser.normalizedRole)}
                     </span>
                   </div>
                 </div>
@@ -259,25 +336,46 @@ const UserManagementTable = ({ users }) => {
                   </div>
                 )}
 
-                {selectedUser.location && (
+                {getDisplayLocation(selectedUser) && (
                   <div>
                     <h5 className="font-semibold text-gray-800 mb-2">Location</h5>
                     <p className="text-gray-600 flex items-center">
                       <MapPin className="w-4 h-4 mr-2" />
-                      {selectedUser.location}
+                      {getDisplayLocation(selectedUser)}
                     </p>
                   </div>
                 )}
 
+                {selectedUser.organizationName && (
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">Organization</h5>
+                    <p className="text-gray-600">{selectedUser.organizationName}</p>
+                  </div>
+                )}
+
+                {selectedUser.contactPerson && (
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">Contact Person</h5>
+                    <p className="text-gray-600">{selectedUser.contactPerson}</p>
+                  </div>
+                )}
+
+                {selectedUser.phone && (
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">Phone</h5>
+                    <p className="text-gray-600">{selectedUser.phone}</p>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
-                  {selectedUser.role === 'ngo' ? (
+                  {isNgoRole(selectedUser.normalizedRole || selectedUser.role) ? (
                     <>
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <div className="flex items-center">
                           <Calendar className="w-5 h-5 text-amber-500 mr-2" />
                           <div>
                             <p className="text-sm text-gray-600">Events Organized</p>
-                            <p className="text-xl font-bold text-gray-800">{selectedUser.eventsOrganized || 0}</p>
+                            <p className="text-xl font-bold text-gray-800">{selectedUser.eventsCreated || 0}</p>
                           </div>
                         </div>
                       </div>
@@ -286,22 +384,24 @@ const UserManagementTable = ({ users }) => {
                     <>
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <div className="flex items-center">
-                          <Calendar className="w-5 h-5 text-blue-500 mr-2" />
+                          <Award className="w-5 h-5 text-blue-500 mr-2" />
                           <div>
-                            <p className="text-sm text-gray-600">Events Joined</p>
-                            <p className="text-xl font-bold text-gray-800">{selectedUser.eventsJoined || 0}</p>
+                            <p className="text-sm text-gray-600">Points</p>
+                            <p className="text-xl font-bold text-gray-800">{selectedUser.points || 0}</p>
                           </div>
                         </div>
                       </div>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <div className="flex items-center">
-                          <Award className="w-5 h-5 text-green-500 mr-2" />
-                          <div>
-                            <p className="text-sm text-gray-600">Waste Collected</p>
-                            <p className="text-xl font-bold text-gray-800">{selectedUser.totalWasteCollected || 0} kg</p>
+                      {selectedUser.eventsJoined !== undefined && (
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <div className="flex items-center">
+                            <Calendar className="w-5 h-5 text-green-500 mr-2" />
+                            <div>
+                              <p className="text-sm text-gray-600">Events Joined</p>
+                              <p className="text-xl font-bold text-gray-800">{selectedUser.eventsJoined || 0}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
                     </>
                   )}
                 </div>

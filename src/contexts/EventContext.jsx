@@ -168,36 +168,38 @@ export const EventProvider = ({ children }) => {
     try {
       console.log('Leaving event:', eventId, 'for user:', userId);
       
-      // First check if user is actually enrolled
-      const isEnrolled = await eventService.isUserEnrolled(eventId, userId);
-      console.log('User enrollment status before leaving:', isEnrolled);
-      
-      if (!isEnrolled) {
-        throw new Error('You are not currently enrolled in this event');
-      }
-      
       // Use the simplified cancelEnrollment method that extracts user ID from JWT
-      await eventService.cancelEnrollment(eventId);
+      // The backend will validate enrollment status
+      const result = await eventService.cancelEnrollment(eventId);
+      console.log('Cancel enrollment result:', result);
       
       // Refresh the events to get updated participant count (silently, without blocking UI)
       await loadEvents(false);
       
+      // Clear any previous errors on success
+      setError(null);
       console.log('Successfully left event');
+      
+      return result;
     } catch (err) {
       console.error('Error leaving event:', err);
       console.error('Error details:', err.message, err.status, err.response);
       
-      // Handle specific error cases
-      if (err.status === 400 && err.response && err.response.error) {
-        if (err.response.error.includes('not currently enrolled')) {
+      // Handle specific error cases - check both message and error fields
+      const errorMessage = err.response?.message || err.response?.error || err.message;
+      if (err.status === 400 && errorMessage) {
+        if (errorMessage.includes('not currently enrolled') || errorMessage.includes('not enrolled')) {
           setError('You are not currently enrolled in this event');
-        } else if (err.response.error.includes('Enrollment not found')) {
+        } else if (errorMessage.includes('Enrollment not found') || errorMessage.includes('not found')) {
           setError('No enrollment found for this event');
         } else {
-          setError(err.response.error);
+          setError(errorMessage);
         }
+      } else if (err.status === 0) {
+        // Network error
+        setError('Network error. Please check your connection and try again.');
       } else {
-        setError(err.message);
+        setError(errorMessage || 'Failed to leave event. Please try again.');
       }
       
       throw err;
